@@ -1,0 +1,86 @@
+package com.marosirobi.workouttrackerapi.service;
+
+import com.marosirobi.workouttrackerapi.domain.entity.User;
+import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
+import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
+import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
+import com.marosirobi.workouttrackerapi.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+
+    public UserResponse createUser(CreateUserRequest request){
+
+        if(userRepository.findByEmail(request.getEmail()).isPresent()){
+            throw new RuntimeException("This email adress is already taken.");
+        }
+
+        User newUser = new User();
+        newUser.setUsername(request.getUsername());
+        newUser.setEmail(request.getEmail());
+        newUser.setPassword(request.getPassword());
+
+        User savedUser = userRepository.save(newUser);
+
+        return mapToResponse(savedUser);
+    }
+
+    public UserResponse updateUser(Long id, UpdateUserRequest request){
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found " + id));
+
+        if(!user.getEmail().equals(request.getEmail())
+                && userRepository.findByEmail(request.getEmail()).isPresent()){
+            throw new RuntimeException("This email is already taken.");
+        }
+
+        if(!user.getUsername().equals(request.getUsername())
+                && userRepository.findByUsername(request.getUsername()).isPresent()){
+            throw new RuntimeException("This username is already taken.");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+
+        User updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser);
+    }
+
+    public void deleteUser(Long id){
+        if(!userRepository.existsById(id)){
+            throw new RuntimeException("User doesn't exist.");
+        }
+        userRepository.deleteById(id);
+    }
+
+    public UserResponse getUserById(Long id){
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found " + id));
+        return mapToResponse(user);
+    }
+
+    public List<UserResponse> getAllUsers(){
+        return userRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private UserResponse mapToResponse(User user){
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        response.setUsername(user.getUsername());
+        response.setCreatedAt(user.getCreatedAt());
+        return response;
+    }
+}
