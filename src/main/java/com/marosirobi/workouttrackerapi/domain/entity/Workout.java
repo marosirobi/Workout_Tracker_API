@@ -8,6 +8,8 @@ import lombok.Setter;
 import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "workouts")
@@ -19,6 +21,12 @@ public class Workout {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "workout_title")
+    private String workoutTitle;
+
+    @Column(name = "workout_note")
+    private String workoutNote;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -37,4 +45,7 @@ public class Workout {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
     private WorkoutTemplate template;
+
+    @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkoutExercise> exercises = new ArrayList<>();
 }
