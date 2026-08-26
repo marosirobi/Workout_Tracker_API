@@ -2,7 +2,9 @@ package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
+import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
+import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
@@ -122,6 +124,40 @@ public class WorkoutService {
         response.setEndTime(workout.getEndTime());
         if(workout.getTemplate() != null){
             response.setTemplateId(workout.getTemplate().getId());
+        }
+        if(workout.getExercises() != null){
+            List<WorkoutExerciseResponse> exerciseResponses = workout.getExercises()
+                    .stream()
+                    .map(we -> {
+                        WorkoutExerciseResponse weResp = new WorkoutExerciseResponse();
+                        weResp.setId(we.getId());
+                        weResp.setOrderIndex(we.getOrderIndex());
+
+                        if(we.getExercise() != null){
+                            weResp.setExerciseId(we.getExercise().getId());
+                            weResp.setExerciseName(we.getExercise().getExerciseName());
+                        }
+
+                        if(we.getSets() != null){
+                            List<ExerciseSetResponse> setResponses = we.getSets()
+                                    .stream()
+                                    .map(set -> {
+                                        ExerciseSetResponse setResp = new ExerciseSetResponse();
+                                        setResp.setId(set.getId());
+                                        setResp.setSetNumber(set.getSetNumber());
+                                        setResp.setReps(set.getReps());
+                                        setResp.setWeight(set.getWeight());
+                                        return setResp;
+                                    })
+                                    .collect(Collectors.toList());
+
+                            weResp.setSets(setResponses);
+                        }
+                        return weResp;
+                    })
+                    .collect(Collectors.toList());
+
+            response.setExercises(exerciseResponses);
         }
         return response;
     }

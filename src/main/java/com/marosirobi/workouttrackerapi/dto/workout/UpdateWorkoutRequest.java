@@ -8,8 +8,8 @@ import java.util.List;
 
 @Data
 public class UpdateWorkoutRequest {
-    private LocalDateTime endTime;
     private String workoutTitle;
     private String workoutNote;
+    private LocalDateTime endTime;
     private List<WorkoutExerciseRequest> exercises;
 }
