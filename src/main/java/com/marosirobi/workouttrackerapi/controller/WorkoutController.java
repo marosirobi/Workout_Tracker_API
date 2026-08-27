@@ -4,6 +4,7 @@ import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
 import com.marosirobi.workouttrackerapi.service.WorkoutService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +20,12 @@ public class WorkoutController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutResponse createWorkout(@RequestBody CreateWorkoutRequest request){
+    public WorkoutResponse createWorkout(@Valid @RequestBody CreateWorkoutRequest request){
         return workoutService.createWorkout(request);
     }
 
     @PutMapping("/{id}")
-    public WorkoutResponse updateWorkout(@PathVariable Long id, @RequestBody UpdateWorkoutRequest request){
+    public WorkoutResponse updateWorkout(@PathVariable Long id, @Valid @RequestBody UpdateWorkoutRequest request){
         return workoutService.updateWorkout(id, request);
     }
 

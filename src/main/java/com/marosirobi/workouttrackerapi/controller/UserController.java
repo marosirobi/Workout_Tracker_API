@@ -4,6 +4,7 @@ import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
 import com.marosirobi.workouttrackerapi.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +20,12 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse createUser(@RequestBody CreateUserRequest request){
+    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request){
         return userService.createUser(request);
     }
 
     @PutMapping("/{id}")
-    public UserResponse updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request){
+    public UserResponse updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request){
         return userService.updateUser(id, request);
     }
 
