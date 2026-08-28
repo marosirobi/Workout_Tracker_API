@@ -27,8 +27,6 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-
-
         if(userRepository.count() == 0){
             // add test user
             User testUser = new User();
