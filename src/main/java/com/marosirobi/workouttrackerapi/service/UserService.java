@@ -1,11 +1,14 @@
 package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.User;
+import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
+import com.marosirobi.workouttrackerapi.dto.auth.LoginRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +19,24 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    public AuthResponse login(LoginRequest request){
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new RuntimeException("Wrong email or password!"));
+
+        if(!passwordEncoder.matches(request.password(), user.getPassword())){
+            throw new RuntimeException("Wrong email or password!");
+        }
+
+        String token = jwtService.generateToken(user.getEmail(), user.getId());
+
+        return AuthResponse.builder()
+                .token(token)
+                .user(mapToResponse(user))
+                .build();
+    }
 
     public UserResponse createUser(CreateUserRequest request){
 
@@ -26,7 +47,7 @@ public class UserService {
         User newUser = new User();
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
-        newUser.setPassword(request.getPassword());
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(newUser);
 

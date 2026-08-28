@@ -6,6 +6,7 @@ import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -21,16 +22,19 @@ public class DataLoader implements CommandLineRunner {
     private final WorkoutRepository workoutRepository;
     private final WorkoutExerciseRepository workoutExerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
+
+
 
         if(userRepository.count() == 0){
             // add test user
             User testUser = new User();
             testUser.setUsername("Bajnok");
             testUser.setEmail("bajnok@gmail.com");
-            testUser.setPassword("jelszo");
+            testUser.setPassword(passwordEncoder.encode("jelszo"));
 
             userRepository.save(testUser);
             System.out.println("TestUser data is saved!");
