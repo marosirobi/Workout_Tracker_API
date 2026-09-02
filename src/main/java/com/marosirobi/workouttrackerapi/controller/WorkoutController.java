@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -20,8 +21,8 @@ public class WorkoutController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutResponse createWorkout(@Valid @RequestBody CreateWorkoutRequest request){
-        return workoutService.createWorkout(request);
+    public WorkoutResponse createWorkout(@Valid @RequestBody CreateWorkoutRequest request, Principal principal){
+        return workoutService.createWorkout(request, principal.getName());
     }
 
     @PutMapping("/{id}")

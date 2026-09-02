@@ -27,10 +27,10 @@ public class WorkoutService {
     private final WorkoutTemplateRepository workoutTemplateRepository;
     private final ExerciseRepository exerciseRepository;
 
-    public WorkoutResponse createWorkout(CreateWorkoutRequest request){
+    public WorkoutResponse createWorkout(CreateWorkoutRequest request, String email){
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found."));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
 
         Workout workout = new Workout();
         workout.setUser(user);
