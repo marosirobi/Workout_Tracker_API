@@ -23,6 +23,8 @@ public class DataLoader implements CommandLineRunner {
     private final WorkoutExerciseRepository workoutExerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TemplateExerciseRepository templateExerciseRepository;
+    private final WorkoutTemplateRepository workoutTemplateRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -88,6 +90,23 @@ public class DataLoader implements CommandLineRunner {
             exerciseSetRepository.save(exerciseSet2);
 
             System.out.println("Test workoutExercise and exerciseSets are saved!");
+
+            WorkoutTemplate template = new WorkoutTemplate();
+            template.setTemplateName("mell-tricepsz nap");
+            template.setUser(testUser);
+
+            TemplateExercise ex = new TemplateExercise();
+            ex.setWorkoutTemplate(template);
+            ex.setExercise(benchPress);
+            ex.setTargetSets(4);
+            ex.setOrderIndex(1);
+
+            template.getExercises().add(ex);
+
+            workoutTemplateRepository.save(template);
+            templateExerciseRepository.save(ex);
+
+            System.out.println("Test Template and TemplateSet are saved!");
         }
 
     }
