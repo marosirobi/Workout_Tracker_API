@@ -51,8 +51,11 @@ public class WorkoutTemplateService {
         return mapToResponse(savedTemplate);
     }
 
-    public List<WorkoutTemplateResponse> getTemplatesByUserId(Long userId){
-        return workoutTemplateRepository.findByUserId(userId)
+    public List<WorkoutTemplateResponse> getMyTemplates(String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        return workoutTemplateRepository.findByUserId(user.getId())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();

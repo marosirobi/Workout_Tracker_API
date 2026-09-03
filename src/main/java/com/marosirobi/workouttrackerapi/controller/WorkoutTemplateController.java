@@ -23,8 +23,8 @@ public class WorkoutTemplateController {
         return workoutTemplateService.createTemplate(request, principal.getName());
     }
 
-    @GetMapping("/users/{userId}")
-    public List<WorkoutTemplateResponse> getTemplatesByUserId(@PathVariable Long userId){
-        return workoutTemplateService.getTemplatesByUserId(userId);
+    @GetMapping
+    public List<WorkoutTemplateResponse> getTemplatesByUserId(Principal principal){
+        return workoutTemplateService.getMyTemplates(principal.getName());
     }
 }

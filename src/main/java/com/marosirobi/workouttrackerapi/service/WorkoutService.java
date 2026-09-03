@@ -5,6 +5,7 @@ import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
+import com.marosirobi.workouttrackerapi.dto.template.TemplateExerciseRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
@@ -42,6 +43,26 @@ public class WorkoutService {
                     .orElseThrow(() -> new RuntimeException("Workout template not found " + request.getTemplateId()));
 
             workout.setTemplate(template);
+
+            if(template.getExercises() != null){
+                for(TemplateExercise tempEx : template.getExercises()){
+
+                    WorkoutExercise workoutEx = new WorkoutExercise();
+                    workoutEx.setOrderIndex(tempEx.getOrderIndex());
+                    workoutEx.setWorkout(workout);
+                    workoutEx.setExercise(tempEx.getExercise());
+
+                    for(int i = 1; i <= tempEx.getTargetSets(); i++){
+                        ExerciseSet set = new ExerciseSet();
+                        set.setSetNumber(i);
+                        set.setWorkoutExercise(workoutEx);
+                        set.setReps(0);
+                        set.setWeight(0.0);
+                        workoutEx.getSets().add(set);
+                    }
+                    workout.getExercises().add(workoutEx);
+                }
+            }
         }
 
         Workout savedWorkout = workoutRepository.save(workout);
