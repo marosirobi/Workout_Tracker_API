@@ -6,11 +6,11 @@ import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
 import com.marosirobi.workouttrackerapi.service.WorkoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/workouts")
@@ -30,9 +30,11 @@ public class WorkoutController {
         return workoutService.updateWorkout(id, request);
     }
 
-    @GetMapping("/user/{userId}")
-    public List<WorkoutResponse> getWorkoutsByUserId(@PathVariable Long userId){
-        return workoutService.getWorkoutsByUserId(userId);
+    @GetMapping
+    public Page<WorkoutResponse> getUserWorkouts(Principal principal,
+                                                 @RequestParam(defaultValue = "0") int size,
+                                                 @RequestParam(defaultValue = "10") int page){
+        return workoutService.getUserWorkouts(principal.getName(), page, size);
     }
 
     @DeleteMapping("/{id}")

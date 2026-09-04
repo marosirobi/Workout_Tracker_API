@@ -5,7 +5,6 @@ import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
-import com.marosirobi.workouttrackerapi.dto.template.TemplateExerciseRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
@@ -14,6 +13,10 @@ import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import com.marosirobi.workouttrackerapi.repository.WorkoutRepository;
 import com.marosirobi.workouttrackerapi.repository.WorkoutTemplateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -70,23 +73,21 @@ public class WorkoutService {
         return mapToResponse(savedWorkout);
     }
 
-    public List<WorkoutResponse> getWorkoutsByUserId(Long userId){
-
-        if(!userRepository.existsById(userId)){
-            throw new RuntimeException("User not found " + userId);
-        }
-
-        return workoutRepository.findByUserId(userId)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
     public void deleteWorkout(Long id){
         if(!workoutRepository.existsById(id)){
             throw new RuntimeException("workout doesn't exist " + id);
         }
         workoutRepository.deleteById(id);
+    }
+
+    public Page<WorkoutResponse> getUserWorkouts(String email, int page, int size){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
+        Page<Workout> workoutPage = workoutRepository.findByUserId(user.getId(), pageable);
+
+        return workoutPage.map(this::mapToResponse);
     }
 
     public WorkoutResponse updateWorkout(Long id, UpdateWorkoutRequest request){
