@@ -2,6 +2,7 @@ package com.marosirobi.workouttrackerapi.controller;
 
 import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
 import com.marosirobi.workouttrackerapi.dto.auth.LoginRequest;
+import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
 import com.marosirobi.workouttrackerapi.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,5 +21,10 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request){
         return userService.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public AuthResponse refreshToken(@Valid @RequestBody RefreshTokenRequest request){
+        return userService.refreshToken(request);
     }
 }

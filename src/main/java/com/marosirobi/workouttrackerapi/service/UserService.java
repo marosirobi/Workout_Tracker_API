@@ -1,8 +1,10 @@
 package com.marosirobi.workouttrackerapi.service;
 
+import com.marosirobi.workouttrackerapi.domain.entity.RefreshToken;
 import com.marosirobi.workouttrackerapi.domain.entity.User;
 import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
 import com.marosirobi.workouttrackerapi.dto.auth.LoginRequest;
+import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
@@ -21,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse login(LoginRequest request){
         User user = userRepository.findByEmail(request.email())
@@ -30,10 +33,12 @@ public class UserService {
             throw new RuntimeException("Wrong email or password!");
         }
 
-        String token = jwtService.generateToken(user.getEmail(), user.getId());
+        String accessToken = jwtService.generateToken(user.getEmail(), user.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthResponse.builder()
-                .token(token)
+                .token(accessToken)
+                .refreshToken(refreshToken.getToken())
                 .user(mapToResponse(user))
                 .build();
     }
@@ -94,6 +99,22 @@ public class UserService {
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public AuthResponse refreshToken(RefreshTokenRequest request){
+        return refreshTokenService.findByToken(request.refreshToken())
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String newAccessToken = jwtService.generateToken(user.getEmail(), user.getId());
+
+                    return AuthResponse.builder()
+                            .token(newAccessToken)
+                            .refreshToken(request.refreshToken())
+                            .user(mapToResponse(user))
+                            .build();
+                })
+                .orElseThrow(() -> new RuntimeException("Invalid Refresh Token"));
     }
 
     private UserResponse mapToResponse(User user){
