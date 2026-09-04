@@ -59,10 +59,10 @@ public class UserService {
         return mapToResponse(savedUser);
     }
 
-    public UserResponse updateUser(Long id, UpdateUserRequest request){
+    public UserResponse updateUser(String email, UpdateUserRequest request){
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found " + id));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
 
         if(!user.getEmail().equals(request.getEmail())
                 && userRepository.findByEmail(request.getEmail()).isPresent()){
@@ -81,16 +81,16 @@ public class UserService {
         return mapToResponse(updatedUser);
     }
 
-    public void deleteUser(Long id){
-        if(!userRepository.existsById(id)){
+    public void deleteUser(String email){
+        if(!userRepository.existsByEmail(email)){
             throw new RuntimeException("User doesn't exist.");
         }
-        userRepository.deleteById(id);
+        userRepository.deleteByEmail(email);
     }
 
-    public UserResponse getUserById(Long id){
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found " + id));
+    public UserResponse getUserByEmail(String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
         return mapToResponse(user);
     }
 

@@ -1,6 +1,5 @@
 package com.marosirobi.workouttrackerapi.controller;
 
-import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
 import com.marosirobi.workouttrackerapi.service.UserService;
@@ -9,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/users")
@@ -18,30 +17,20 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request){
-        return userService.createUser(request);
+    @PutMapping("/me")
+    public UserResponse updateMyAccount(Principal principal, @Valid @RequestBody UpdateUserRequest request){
+        return userService.updateUser(principal.getName(), request);
     }
 
-    @PutMapping("/{id}")
-    public UserResponse updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request){
-        return userService.updateUser(id, request);
-    }
-
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable Long id){
-        userService.deleteUser(id);
+    public void deleteMyAccount(Principal principal){
+        userService.deleteUser(principal.getName());
     }
 
-    @GetMapping
-    public List<UserResponse> getAllUsers(){
-        return userService.getAllUsers();
+    @GetMapping("/me")
+    public UserResponse getMyAccount(Principal principal){
+        return userService.getUserByEmail(principal.getName());
     }
 
-    @GetMapping("/{id}")
-    public UserResponse getUserById(@PathVariable Long id){
-        return userService.getUserById(id);
-    }
 }
