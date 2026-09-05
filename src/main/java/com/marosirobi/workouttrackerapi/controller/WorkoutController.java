@@ -1,5 +1,6 @@
 package com.marosirobi.workouttrackerapi.controller;
 
+import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
@@ -25,6 +26,13 @@ public class WorkoutController {
         return workoutService.createWorkout(request, principal.getName());
     }
 
+    @PostMapping("/{id}/cardio-data")
+    public WorkoutResponse saveCardioData(@PathVariable Long id,
+                                          @Valid @RequestBody CardioDataRequest request,
+                                          Principal principal){
+        return workoutService.saveCardioData(id, request, principal.getName());
+    }
+
     @PutMapping("/{id}")
     public WorkoutResponse updateWorkout(@PathVariable Long id, @Valid @RequestBody UpdateWorkoutRequest request){
         return workoutService.updateWorkout(id, request);
@@ -32,8 +40,8 @@ public class WorkoutController {
 
     @GetMapping
     public Page<WorkoutResponse> getUserWorkouts(Principal principal,
-                                                 @RequestParam(defaultValue = "0") int size,
-                                                 @RequestParam(defaultValue = "10") int page){
+                                                 @RequestParam(defaultValue = "10") int size,
+                                                 @RequestParam(defaultValue = "0") int page){
         return workoutService.getUserWorkouts(principal.getName(), page, size);
     }
 

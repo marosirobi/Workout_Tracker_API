@@ -59,6 +59,12 @@ public class DataLoader implements CommandLineRunner {
             workout.setStartTime(LocalDateTime.now());
             workoutRepository.save(workout);
 
+            Workout workout2 = new Workout();
+            workout2.setType(WorkoutType.CARDIO);
+            workout2.setUser(testUser);
+            workout2.setStartTime(LocalDateTime.now());
+            workoutRepository.save(workout2);
+
             System.out.println("Test workout is saved!");
 
             //add test workoutExercise and ExerciseSet data

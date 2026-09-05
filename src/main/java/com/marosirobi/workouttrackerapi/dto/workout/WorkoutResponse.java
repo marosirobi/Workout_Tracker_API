@@ -1,10 +1,14 @@
 package com.marosirobi.workouttrackerapi.dto.workout;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
+import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsDto;
+import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointDto;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +24,9 @@ import java.util.List;
         "exercises"
 })
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WorkoutResponse {
     private Long id;
     private Long templateId;
@@ -29,5 +36,10 @@ public class WorkoutResponse {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
+    //STRENGTH
     private List<WorkoutExerciseResponse> exercises;
+
+    //CARDIO
+    private CardioStatsDto cardioStats;
+    private List<TrackPointDto> trackPoints;
 }
