@@ -9,6 +9,7 @@ import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class UserService {
                 .build();
     }
 
+    @Transactional
     public UserResponse createUser(CreateUserRequest request){
 
         if(userRepository.findByEmail(request.getEmail()).isPresent()){
@@ -59,6 +61,7 @@ public class UserService {
         return mapToResponse(savedUser);
     }
 
+    @Transactional
     public UserResponse updateUser(String email, UpdateUserRequest request){
 
         User user = userRepository.findByEmail(email)
@@ -81,6 +84,7 @@ public class UserService {
         return mapToResponse(updatedUser);
     }
 
+    @Transactional
     public void deleteUser(String email){
         if(!userRepository.existsByEmail(email)){
             throw new RuntimeException("User doesn't exist.");

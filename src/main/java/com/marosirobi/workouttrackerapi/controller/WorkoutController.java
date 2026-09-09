@@ -34,8 +34,10 @@ public class WorkoutController {
     }
 
     @PutMapping("/{id}")
-    public WorkoutResponse updateWorkout(@PathVariable Long id, @Valid @RequestBody UpdateWorkoutRequest request){
-        return workoutService.updateWorkout(id, request);
+    public WorkoutResponse updateWorkout(@PathVariable Long id,
+                                         @Valid @RequestBody UpdateWorkoutRequest request,
+                                         Principal principal){
+        return workoutService.updateWorkout(id, request, principal.getName());
     }
 
     @GetMapping
@@ -47,7 +49,8 @@ public class WorkoutController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteWorkout(@PathVariable Long id){
-        workoutService.deleteWorkout(id);
+    public void deleteWorkout(@PathVariable Long id,
+                              Principal principal){
+        workoutService.deleteWorkout(id, principal.getName());
     }
 }

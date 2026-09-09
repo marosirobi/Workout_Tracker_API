@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
 
     Optional<Exercise> findByExerciseName(String exerciseName);
+
 }

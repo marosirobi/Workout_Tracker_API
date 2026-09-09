@@ -4,6 +4,7 @@ import com.marosirobi.workouttrackerapi.domain.entity.Exercise;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,5 +20,10 @@ public class ExerciseController {
     @GetMapping
     public List<Exercise> getAllExercises(){
         return exerciseRepository.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public Exercise getExerciseById(@PathVariable Long id){
+        return exerciseRepository.findById(id).orElse(null);
     }
 }

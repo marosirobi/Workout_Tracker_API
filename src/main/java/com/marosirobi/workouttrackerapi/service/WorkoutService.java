@@ -36,8 +36,8 @@ public class WorkoutService {
     private final ExerciseRepository exerciseRepository;
     private final TrackPointRepository trackPointRepository;
     private final CardioStatsRepository cardioStatsRepository;
-    private final GenericResponseService responseBuilder;
 
+    @Transactional
     public WorkoutResponse createWorkout(CreateWorkoutRequest request, String email){
 
         User user = userRepository.findByEmail(email)
@@ -80,9 +80,13 @@ public class WorkoutService {
         return mapToResponse(savedWorkout);
     }
 
-    public void deleteWorkout(Long id){
-        if(!workoutRepository.existsById(id)){
-            throw new RuntimeException("workout doesn't exist " + id);
+    @Transactional
+    public void deleteWorkout(Long id, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        if(!workoutRepository.existsByIdAndUserId(id, user.getId())){
+            throw new RuntimeException("Workout doesn't exist or you don't have permission: " + id);
         }
         workoutRepository.deleteById(id);
     }
@@ -97,8 +101,12 @@ public class WorkoutService {
         return workoutPage.map(this::mapToResponse);
     }
 
-    public WorkoutResponse updateWorkout(Long id, UpdateWorkoutRequest request){
-        Workout workout = workoutRepository.findById(id)
+    @Transactional
+    public WorkoutResponse updateWorkout(Long id, UpdateWorkoutRequest request, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new RuntimeException("Workout not found " + id));
 
         if(request.getEndTime() != null){

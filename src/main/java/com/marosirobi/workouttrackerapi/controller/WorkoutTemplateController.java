@@ -1,8 +1,11 @@
 package com.marosirobi.workouttrackerapi.controller;
 
 import com.marosirobi.workouttrackerapi.dto.template.CreateWorkoutTemplateRequest;
+import com.marosirobi.workouttrackerapi.dto.template.UpdateTemplateExerciseRequest;
+import com.marosirobi.workouttrackerapi.dto.template.UpdateWorkoutTemplateRequest;
 import com.marosirobi.workouttrackerapi.dto.template.WorkoutTemplateResponse;
 import com.marosirobi.workouttrackerapi.service.WorkoutTemplateService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +22,23 @@ public class WorkoutTemplateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutTemplateResponse createTemplate(@RequestBody CreateWorkoutTemplateRequest request, Principal principal){
+    public WorkoutTemplateResponse createTemplate(@RequestBody CreateWorkoutTemplateRequest request,
+                                                  Principal principal){
         return workoutTemplateService.createTemplate(request, principal.getName());
+    }
+
+    @PutMapping("/{id}")
+    public WorkoutTemplateResponse updateTemplate(@PathVariable Long id,
+                                                  @Valid @RequestBody UpdateWorkoutTemplateRequest request,
+                                                  Principal principal){
+        return workoutTemplateService.updateTemplate(id, request, principal.getName());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTemplate(@PathVariable Long id,
+                               Principal principal){
+        workoutTemplateService.deleteTemplate(id, principal.getName());
     }
 
     @GetMapping

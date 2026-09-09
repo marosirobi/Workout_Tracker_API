@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface WorkoutTemplateRepository extends JpaRepository<WorkoutTemplate, Long> {
 
     Optional<WorkoutTemplate> findByUserId(Long userId);
+    Optional<WorkoutTemplate> findByIdAndUserId(Long id, Long userId);
+    boolean existsByIdAndUserId(Long id, Long userId);
 }

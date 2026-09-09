@@ -1,16 +1,15 @@
 package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
-import com.marosirobi.workouttrackerapi.dto.template.CreateWorkoutTemplateRequest;
-import com.marosirobi.workouttrackerapi.dto.template.TemplateExerciseRequest;
-import com.marosirobi.workouttrackerapi.dto.template.TemplateExerciseResponse;
-import com.marosirobi.workouttrackerapi.dto.template.WorkoutTemplateResponse;
+import com.marosirobi.workouttrackerapi.dto.template.*;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
 import com.marosirobi.workouttrackerapi.repository.TemplateExerciseRepository;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import com.marosirobi.workouttrackerapi.repository.WorkoutTemplateRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +22,7 @@ public class WorkoutTemplateService {
     private final UserRepository userRepository;
     private final ExerciseRepository exerciseRepository;
 
+    @Transactional
     public WorkoutTemplateResponse createTemplate(CreateWorkoutTemplateRequest request, String email){
 
         User user = userRepository.findByEmail(email)
@@ -59,6 +59,51 @@ public class WorkoutTemplateService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional
+    public WorkoutTemplateResponse updateTemplate(Long id, UpdateWorkoutTemplateRequest request, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        WorkoutTemplate workoutTemplate = workoutTemplateRepository.findByIdAndUserId(id, user.getId())
+                .orElseThrow(() -> new RuntimeException("Workout template not found " + id));
+
+        workoutTemplate.setTemplateName(request.templateName());
+
+        if(workoutTemplate.getExercises() != null){
+            workoutTemplate.getExercises().clear();
+        }
+
+        if(request.exercises() != null && !request.exercises().isEmpty()){
+            List<TemplateExercise> updatedExercises = request.exercises().stream().map(dto ->{
+                Exercise exercise = exerciseRepository.findById(dto.exerciseId())
+                        .orElseThrow(() -> new RuntimeException("Exercise not found " + dto.exerciseId()));
+
+                TemplateExercise te = new TemplateExercise();
+                te.setExercise(exercise);
+                te.setOrderIndex(dto.orderIndex());
+                te.setTargetSets(dto.targetSets());
+                te.setWorkoutTemplate(workoutTemplate);
+                return te;
+            })
+                    .toList();
+
+            workoutTemplate.getExercises().addAll(updatedExercises);
+        }
+        workoutTemplateRepository.save(workoutTemplate);
+        return mapToResponse(workoutTemplate);
+    }
+
+    @Transactional
+    public void deleteTemplate(Long id, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        if(!workoutTemplateRepository.existsByIdAndUserId(id, user.getId())){
+            throw new RuntimeException("Workout template doesn't exist or you don't have permission: " + id);
+        }
+        workoutTemplateRepository.deleteById(id);
     }
 
     private WorkoutTemplateResponse mapToResponse(WorkoutTemplate template){

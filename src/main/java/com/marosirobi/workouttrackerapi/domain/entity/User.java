@@ -1,5 +1,6 @@
 package com.marosirobi.workouttrackerapi.domain.entity;
 
+import com.marosirobi.workouttrackerapi.domain.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,6 +27,10 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.USER;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
