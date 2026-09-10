@@ -7,6 +7,6 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record CardioDataRequest(@NotNull CardioStatsDto stats,
-                                @Valid List<TrackPointDto> trackPoints) {
+public record CardioDataRequest(@NotNull CardioStatsResponse stats,
+                                @Valid List<TrackPointResponse> trackPoints) {
 }

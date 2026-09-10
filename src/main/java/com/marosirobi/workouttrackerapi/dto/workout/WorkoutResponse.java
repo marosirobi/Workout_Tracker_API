@@ -2,8 +2,8 @@ package com.marosirobi.workouttrackerapi.dto.workout;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
-import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsDto;
-import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointDto;
+import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsResponse;
+import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,6 +40,6 @@ public class WorkoutResponse {
     private List<WorkoutExerciseResponse> exercises;
 
     //CARDIO
-    private CardioStatsDto cardioStats;
-    private List<TrackPointDto> trackPoints;
+    private CardioStatsResponse cardioStats;
+    private List<TrackPointResponse> trackPoints;
 }

@@ -26,6 +26,9 @@ public class CardioStats {
     @Column(name = "elevation_gain")
     private Integer elevationGain;
 
+    @Column(name = "moving_time_seconds")
+    private Integer movingTimeSeconds;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_id", nullable = false, unique = true)
     private Workout workout;

@@ -3,8 +3,8 @@ package com.marosirobi.workouttrackerapi.service;
 import com.marosirobi.workouttrackerapi.domain.entity.*;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
-import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsDto;
-import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointDto;
+import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsResponse;
+import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
@@ -12,16 +12,17 @@ import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
+import com.marosirobi.workouttrackerapi.dto.workout.WorkoutSummaryResponse;
 import com.marosirobi.workouttrackerapi.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.service.GenericResponseService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -91,14 +92,48 @@ public class WorkoutService {
         workoutRepository.deleteById(id);
     }
 
-    public Page<WorkoutResponse> getUserWorkouts(String email, int page, int size){
+    public Page<WorkoutSummaryResponse> getUserWorkouts(String email, int page, int size){
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
         Page<Workout> workoutPage = workoutRepository.findByUserId(user.getId(), pageable);
 
-        return workoutPage.map(this::mapToResponse);
+        return workoutPage.map(workout -> {
+            Double distance = null;
+            String pace = null;
+
+            if(workout.getCardioStats() != null){
+                distance = workout.getCardioStats().getTotalDistance();
+                pace = workout.getCardioStats().getAvgPace();
+            }
+
+            Long duration = 0L;
+
+            if(workout.getStartTime() != null && workout.getEndTime() != null){
+                duration = Duration.between(workout.getStartTime(), workout.getEndTime()).getSeconds();
+            }
+            return WorkoutSummaryResponse.builder()
+                    .id(workout.getId())
+                    .name(workout.getWorkoutTitle())
+                    .type(workout.getType())
+                    .startTime(workout.getStartTime())
+                    .endTime(workout.getEndTime())
+                    .durationSeconds(duration)
+                    .avgPace(pace)
+                    .totalDistance(distance)
+                    .build();
+        });
+    }
+
+    public WorkoutResponse getWorkoutById(Long id, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
+                .orElseThrow(() -> new RuntimeException("Workout not found or you don't have permission: " + id));
+
+        return mapToResponse(workout);
     }
 
     @Transactional
@@ -171,6 +206,7 @@ public class WorkoutService {
                 .workout(workout)
                 .totalDistance(request.stats().totalDistance())
                 .avgPace(request.stats().avgPace())
+                .movingTimeSeconds(request.stats().movingTimeSeconds())
                 .elevationGain(request.stats().elevationGain())
                 .build();
 
@@ -183,7 +219,8 @@ public class WorkoutService {
                                 .latitude(dto.latitude())
                                 .longitude(dto.longitude())
                                 .elevation(dto.elevation())
-                                .timestamp(dto.timeStamp())
+                                .speed(dto.speed())
+                                .timestamp(dto.timestamp())
                                 .build())
                     .toList();
 
@@ -191,6 +228,7 @@ public class WorkoutService {
         }
 
         workout.setEndTime(LocalDateTime.now());
+
         workoutRepository.save(workout);
 
         return mapToResponse(workout);
@@ -242,31 +280,32 @@ public class WorkoutService {
 
                 response.setExercises(exerciseResponses);
             }
-        }else if(workout.getType() == WorkoutType.CARDIO){
-            cardioStatsRepository.findByWorkoutId(workout.getId()).ifPresent(stats ->{
-                response.setCardioStats(CardioStatsDto.builder()
-                        .avgPace(stats.getAvgPace())
-                        .elevationGain(stats.getElevationGain())
-                        .totalDistance(stats.getTotalDistance())
-                        .build());
-                    });
+        } else if (workout.getType() == WorkoutType.CARDIO) {
 
-            List<TrackPoint> points = trackPointRepository.findAllByWorkoutIdOrderByTimestampAsc(workout.getId());
-            if(points != null && !points.isEmpty()){
-                List<TrackPointDto> pointResponse = points.stream()
-                        .map(p -> TrackPointDto.builder()
-                                .latitude(p.getLatitude())
-                                .longitude(p.getLongitude())
-                                .elevation(p.getElevation())
-                                .timeStamp(p.getTimestamp())
-                                .build())
-                        .toList();
-
-                response.setTrackPoints(pointResponse);
-            }
+        if (workout.getCardioStats() != null) {
+            response.setCardioStats(CardioStatsResponse.builder()
+                    .avgPace(workout.getCardioStats().getAvgPace())
+                    .elevationGain(workout.getCardioStats().getElevationGain())
+                    .totalDistance(workout.getCardioStats().getTotalDistance())
+                    .movingTimeSeconds(workout.getCardioStats().getMovingTimeSeconds())
+                    .build());
         }
 
-        return response;
+        if (workout.getTrackPoints() != null && !workout.getTrackPoints().isEmpty()) {
+            List<TrackPointResponse> pointResponse = workout.getTrackPoints().stream()
+                    .map(p -> TrackPointResponse.builder()
+                            .latitude(p.getLatitude())
+                            .longitude(p.getLongitude())
+                            .elevation(p.getElevation())
+                            .timestamp(p.getTimestamp())
+                            .speed(p.getSpeed())
+                            .build())
+                    .toList();
+            response.setTrackPoints(pointResponse);
+        }
+    }
+
+    return response;
     }
 
 }

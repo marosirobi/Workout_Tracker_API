@@ -29,6 +29,9 @@ public class TrackPoint {
     private Double elevation;
 
     @Column(nullable = false)
+    private Double speed;
+
+    @Column(nullable = false)
     private LocalDateTime timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)

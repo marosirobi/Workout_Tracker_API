@@ -47,4 +47,10 @@ public class Workout {
 
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkoutExercise> exercises = new ArrayList<>();
+
+    @OneToOne(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
+    private CardioStats cardioStats;
+
+    @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TrackPoint> trackPoints = new ArrayList<>();
 }

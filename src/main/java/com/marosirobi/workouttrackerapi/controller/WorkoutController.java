@@ -4,6 +4,7 @@ import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
+import com.marosirobi.workouttrackerapi.dto.workout.WorkoutSummaryResponse;
 import com.marosirobi.workouttrackerapi.service.WorkoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,10 +42,15 @@ public class WorkoutController {
     }
 
     @GetMapping
-    public Page<WorkoutResponse> getUserWorkouts(Principal principal,
-                                                 @RequestParam(defaultValue = "10") int size,
-                                                 @RequestParam(defaultValue = "0") int page){
+    public Page<WorkoutSummaryResponse> getUserWorkouts(Principal principal,
+                                                                 @RequestParam(defaultValue = "10") int size,
+                                                                 @RequestParam(defaultValue = "0") int page){
         return workoutService.getUserWorkouts(principal.getName(), page, size);
+    }
+
+    @GetMapping("/{id}")
+    public WorkoutResponse getWorkoutById(@PathVariable Long id, Principal principal){
+        return workoutService.getWorkoutById(id, principal.getName());
     }
 
     @DeleteMapping("/{id}")
