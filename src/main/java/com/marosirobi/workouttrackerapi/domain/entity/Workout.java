@@ -2,9 +2,7 @@ package com.marosirobi.workouttrackerapi.domain.entity;
 
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,6 +12,8 @@ import java.util.List;
 @Table(name = "workouts")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class Workout {
 
@@ -45,12 +45,14 @@ public class Workout {
     @JoinColumn(name = "template_id")
     private WorkoutTemplate template;
 
+    @Builder.Default
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkoutExercise> exercises = new ArrayList<>();
 
     @OneToOne(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     private CardioStats cardioStats;
 
+    @Builder.Default
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TrackPoint> trackPoints = new ArrayList<>();
 }

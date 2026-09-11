@@ -1,9 +1,7 @@
 package com.marosirobi.workouttrackerapi.domain.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +10,8 @@ import java.util.List;
 @Table(name = "workout_templates")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class WorkoutTemplate {
 
@@ -26,6 +26,7 @@ public class WorkoutTemplate {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Builder.Default
     @OneToMany(mappedBy = "workoutTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TemplateExercise> exercises = new ArrayList<>();
 }

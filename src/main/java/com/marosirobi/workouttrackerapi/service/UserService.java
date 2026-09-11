@@ -47,14 +47,15 @@ public class UserService {
     @Transactional
     public UserResponse createUser(CreateUserRequest request){
 
-        if(userRepository.findByEmail(request.getEmail()).isPresent()){
+        if(userRepository.findByEmail(request.email()).isPresent()){
             throw new RuntimeException("This email adress is already taken.");
         }
 
-        User newUser = new User();
-        newUser.setUsername(request.getUsername());
-        newUser.setEmail(request.getEmail());
-        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        User newUser = User.builder()
+                .username(request.username())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .build();
 
         User savedUser = userRepository.save(newUser);
 
@@ -67,34 +68,43 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
 
-        if(!user.getEmail().equals(request.getEmail())
-                && userRepository.findByEmail(request.getEmail()).isPresent()){
-            throw new RuntimeException("This email is already taken.");
+        boolean credentialsChanged = false;
+
+        if(!user.getEmail().equals(request.email())){
+            if(userRepository.findByEmail(request.email()).isPresent())
+                throw new RuntimeException("This email is already taken.");
+
+            user.setEmail(request.email());
+            credentialsChanged = true;
         }
 
-        if(!user.getUsername().equals(request.getUsername())
-                && userRepository.findByUsername(request.getUsername()).isPresent()){
-            throw new RuntimeException("This username is already taken.");
-        }
+        if(!user.getUsername().equals(request.username())){
+            if(userRepository.findByUsername(request.username()).isPresent())
+                throw new RuntimeException("This username is already taken.");
 
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
+            user.setUsername(request.username());
+            credentialsChanged = true;
+        }
 
         User updatedUser = userRepository.save(user);
-        return mapToResponse(updatedUser);
+
+        String newAccessToken = credentialsChanged ? jwtService.generateToken(user.getEmail(), user.getId()) : null;
+
+        return mapToResponse(updatedUser, newAccessToken);
     }
 
     @Transactional
     public void deleteUser(String email){
-        if(!userRepository.existsByEmail(email)){
-            throw new RuntimeException("User doesn't exist.");
-        }
-        userRepository.deleteByEmail(email);
+        User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        userRepository.delete(user);
     }
 
     public UserResponse getUserByEmail(String email){
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
+
         return mapToResponse(user);
     }
 
@@ -121,12 +131,17 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Invalid Refresh Token"));
     }
 
+    private UserResponse mapToResponse(User user, String accessToken){
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .accessToken(accessToken)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
     private UserResponse mapToResponse(User user){
-        UserResponse response = new UserResponse();
-        response.setId(user.getId());
-        response.setEmail(user.getEmail());
-        response.setUsername(user.getUsername());
-        response.setCreatedAt(user.getCreatedAt());
-        return response;
+        return  mapToResponse(user, null);
     }
 }

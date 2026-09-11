@@ -7,6 +7,8 @@ import lombok.*;
 @Table(name = "gym_wallets")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class GymWallet {
 

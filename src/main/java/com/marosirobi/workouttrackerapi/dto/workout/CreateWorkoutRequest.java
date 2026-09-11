@@ -2,18 +2,12 @@ package com.marosirobi.workouttrackerapi.dto.workout;
 
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Data
-public class CreateWorkoutRequest {
-
-    @NotNull(message = "Workout type (STRENGTH/CARDIO) can not be null!")
-    private WorkoutType type;
-
-    @NotNull(message = "Start time can not be null!")
-    private LocalDateTime startTime;
-
-    private Long templateId;
-}
+@Builder
+public record CreateWorkoutRequest (@NotNull WorkoutType type,
+                                    @NotNull LocalDateTime startTime,
+                                    Long templateId) { }

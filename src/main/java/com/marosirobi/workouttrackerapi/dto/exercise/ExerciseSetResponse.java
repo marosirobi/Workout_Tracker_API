@@ -1,11 +1,10 @@
 package com.marosirobi.workouttrackerapi.dto.exercise;
 
+import lombok.Builder;
 import lombok.Data;
 
-@Data
-public class ExerciseSetResponse {
-    private Long id;
-    private Integer setNumber;
-    private Integer reps;
-    private Double weight;
-}
+@Builder
+public record ExerciseSetResponse (Long id,
+                                   Integer setNumber,
+                                   Integer reps,
+                                   Double weight) { }

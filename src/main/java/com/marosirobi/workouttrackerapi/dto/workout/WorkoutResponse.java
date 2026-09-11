@@ -23,23 +23,17 @@ import java.util.List;
         "workoutNote",
         "exercises"
 })
-@Data
+
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class WorkoutResponse {
-    private Long id;
-    private Long templateId;
-    private String workoutTitle;
-    private String workoutNote;
-    private WorkoutType type;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-
-    //STRENGTH
-    private List<WorkoutExerciseResponse> exercises;
-
-    //CARDIO
-    private CardioStatsResponse cardioStats;
-    private List<TrackPointResponse> trackPoints;
-}
+public record WorkoutResponse(Long id,
+                              Long templateId,
+                              String workoutTitle,
+                              String workoutNote,
+                              WorkoutType type,
+                              LocalDateTime startTime,
+                              LocalDateTime endTime,
+                              //STRENGTH
+                              List<WorkoutExerciseResponse> exercises,
+                              //CARDIO
+                              CardioStatsResponse cardioStats,
+                              List<TrackPointResponse> trackPoints) { }

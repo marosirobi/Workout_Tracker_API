@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,37 +43,40 @@ public class WorkoutService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
 
-        Workout workout = new Workout();
-        workout.setUser(user);
-        workout.setType(request.getType());
-        workout.setStartTime(request.getStartTime());
+        WorkoutTemplate template = null;
+        if(request.templateId() != null)
+            template = workoutTemplateRepository.findById(request.templateId())
+                    .orElseThrow(() -> new RuntimeException("Workout template not found " + request.templateId()));
 
-        if(request.getTemplateId() != null){
-            WorkoutTemplate template = workoutTemplateRepository.findById(request.getTemplateId())
-                    .orElseThrow(() -> new RuntimeException("Workout template not found " + request.getTemplateId()));
+        Workout workout = Workout.builder()
+                .user(user)
+                .type(request.type())
+                .startTime(request.startTime())
+                .template(template)
+                .build();
 
-            workout.setTemplate(template);
-
-            if(template.getExercises() != null){
+            if(template != null && template.getExercises() != null){
                 for(TemplateExercise tempEx : template.getExercises()){
 
-                    WorkoutExercise workoutEx = new WorkoutExercise();
-                    workoutEx.setOrderIndex(tempEx.getOrderIndex());
-                    workoutEx.setWorkout(workout);
-                    workoutEx.setExercise(tempEx.getExercise());
+                    WorkoutExercise workoutEx = WorkoutExercise.builder()
+                            .orderIndex(tempEx.getOrderIndex())
+                            .workout(workout)
+                            .exercise(tempEx.getExercise())
+                            .build();
 
                     for(int i = 1; i <= tempEx.getTargetSets(); i++){
-                        ExerciseSet set = new ExerciseSet();
-                        set.setSetNumber(i);
-                        set.setWorkoutExercise(workoutEx);
-                        set.setReps(0);
-                        set.setWeight(0.0);
+                        ExerciseSet set = ExerciseSet.builder()
+                                .workoutExercise(workoutEx)
+                                .setNumber(i)
+                                .reps(0)
+                                .weight(0.0)
+                                .build();
+
                         workoutEx.getSets().add(set);
                     }
                     workout.getExercises().add(workoutEx);
                 }
             }
-        }
 
         Workout savedWorkout = workoutRepository.save(workout);
 
@@ -144,36 +146,38 @@ public class WorkoutService {
         Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new RuntimeException("Workout not found " + id));
 
-        if(request.getEndTime() != null){
-            workout.setEndTime(request.getEndTime());
+        if(request.endTime() != null){
+            workout.setEndTime(request.endTime());
         }
-        if(request.getWorkoutTitle() != null){
-            workout.setWorkoutTitle(request.getWorkoutTitle());
+        if(request.workoutTitle() != null){
+            workout.setWorkoutTitle(request.workoutTitle());
         }
-        if(request.getWorkoutNote() != null){
-            workout.setWorkoutNote(request.getWorkoutNote());
+        if(request.workoutNote() != null){
+            workout.setWorkoutNote(request.workoutNote());
         }
 
-        if(request.getExercises() != null){
+        if(request.exercises() != null){
             workout.getExercises().clear();
 
-            for(WorkoutExerciseRequest exReq : request.getExercises()){
+            for(WorkoutExerciseRequest exReq : request.exercises()){
 
-                Exercise exercise = exerciseRepository.findById(exReq.getExerciseId())
-                        .orElseThrow(() -> new RuntimeException("Exercise not found " + exReq.getExerciseId()));
+                Exercise exercise = exerciseRepository.findById(exReq.exerciseId())
+                        .orElseThrow(() -> new RuntimeException("Exercise not found " + exReq.exerciseId()));
 
-                WorkoutExercise workoutExercise = new WorkoutExercise();
-                workoutExercise.setWorkout(workout);
-                workoutExercise.setExercise(exercise);
-                workoutExercise.setOrderIndex(exReq.getOrderIndex());
+                WorkoutExercise workoutExercise = WorkoutExercise.builder()
+                        .workout(workout)
+                        .exercise(exercise)
+                        .orderIndex(exReq.orderIndex())
+                        .build();
 
-                if(exReq.getSets() != null){
-                    for(ExerciseSetRequest setReq : exReq.getSets()){
-                        ExerciseSet set = new ExerciseSet();
-                        set.setWorkoutExercise(workoutExercise);
-                        set.setSetNumber(setReq.getSetNumber());
-                        set.setWeight(setReq.getWeight());
-                        set.setReps(setReq.getReps());
+                if(exReq.sets() != null){
+                    for(ExerciseSetRequest setReq : exReq.sets()){
+                        ExerciseSet set = ExerciseSet.builder()
+                                .workoutExercise(workoutExercise)
+                                .setNumber(setReq.setNumber())
+                                .weight(setReq.weight())
+                                .reps(setReq.reps())
+                                .build();
 
                         workoutExercise.getSets().add(set);
                     }
@@ -235,77 +239,72 @@ public class WorkoutService {
     }
 
     private WorkoutResponse mapToResponse(Workout workout){
-        WorkoutResponse response = new WorkoutResponse();
-        response.setId(workout.getId());
-        response.setWorkoutTitle(workout.getWorkoutTitle());
-        response.setWorkoutNote(workout.getWorkoutNote());
-        response.setStartTime(workout.getStartTime());
-        response.setEndTime(workout.getEndTime());
-        response.setType(workout.getType());
+        WorkoutResponse.WorkoutResponseBuilder responseBuilder = WorkoutResponse.builder()
+                .id(workout.getId())
+                .workoutTitle(workout.getWorkoutTitle())
+                .workoutNote(workout.getWorkoutNote())
+                .startTime(workout.getStartTime())
+                .endTime(workout.getEndTime())
+                .type(workout.getType());
+
         if(workout.getType() == WorkoutType.STRENGTH){
             if(workout.getTemplate() != null){
-                response.setTemplateId(workout.getTemplate().getId());
+                responseBuilder.templateId(workout.getTemplate().getId());
             }
             if(workout.getExercises() != null){
                 List<WorkoutExerciseResponse> exerciseResponses = workout.getExercises()
                         .stream()
                         .map(we -> {
-                            WorkoutExerciseResponse weResp = new WorkoutExerciseResponse();
-                            weResp.setId(we.getId());
-                            weResp.setOrderIndex(we.getOrderIndex());
+                            WorkoutExerciseResponse.WorkoutExerciseResponseBuilder weResponseBuilder = WorkoutExerciseResponse.builder()
+                            .id(we.getId())
+                            .orderIndex(we.getOrderIndex());
 
                             if(we.getExercise() != null){
-                                weResp.setExerciseId(we.getExercise().getId());
-                                weResp.setExerciseName(we.getExercise().getExerciseName());
+                                weResponseBuilder
+                                        .exerciseId(we.getExercise().getId())
+                                        .exerciseName(we.getExercise().getExerciseName());
                             }
 
                             if(we.getSets() != null){
                                 List<ExerciseSetResponse> setResponses = we.getSets()
                                         .stream()
-                                        .map(set -> {
-                                            ExerciseSetResponse setResp = new ExerciseSetResponse();
-                                            setResp.setId(set.getId());
-                                            setResp.setSetNumber(set.getSetNumber());
-                                            setResp.setReps(set.getReps());
-                                            setResp.setWeight(set.getWeight());
-                                            return setResp;
-                                        })
-                                        .collect(Collectors.toList());
-
-                                weResp.setSets(setResponses);
+                                        .map(set -> ExerciseSetResponse.builder()
+                                                .id(set.getId())
+                                                .setNumber(set.getSetNumber())
+                                                .reps(set.getReps())
+                                                .weight(set.getWeight()).build()
+                                        ).toList();
+                                weResponseBuilder.sets(setResponses);
                             }
-                            return weResp;
-                        })
-                        .collect(Collectors.toList());
-
-                response.setExercises(exerciseResponses);
+                            return weResponseBuilder.build();
+                        }).toList();
+                responseBuilder.exercises(exerciseResponses);
             }
-        } else if (workout.getType() == WorkoutType.CARDIO) {
-
-        if (workout.getCardioStats() != null) {
-            response.setCardioStats(CardioStatsResponse.builder()
-                    .avgPace(workout.getCardioStats().getAvgPace())
-                    .elevationGain(workout.getCardioStats().getElevationGain())
-                    .totalDistance(workout.getCardioStats().getTotalDistance())
-                    .movingTimeSeconds(workout.getCardioStats().getMovingTimeSeconds())
-                    .build());
+        }else if(workout.getType() == WorkoutType.CARDIO){
+            if(workout.getCardioStats() != null){
+                responseBuilder.cardioStats(CardioStatsResponse.builder()
+                        .totalDistance(workout.getCardioStats().getTotalDistance())
+                        .elevationGain(workout.getCardioStats().getElevationGain())
+                        .movingTimeSeconds(workout.getCardioStats().getMovingTimeSeconds())
+                        .avgPace(workout.getCardioStats().getAvgPace())
+                        .build()
+                );
+            }
+            if(workout.getTrackPoints() != null){
+                List<TrackPointResponse> trackPoints = workout.getTrackPoints()
+                        .stream()
+                        .map(tp -> TrackPointResponse.builder()
+                                .timestamp(tp.getTimestamp())
+                                .latitude(tp.getLatitude())
+                                .longitude(tp.getLongitude())
+                                .speed(tp.getSpeed())
+                                .elevation(tp.getElevation())
+                                .build()
+                        ).toList();
+                responseBuilder.trackPoints(trackPoints);
+            }
         }
 
-        if (workout.getTrackPoints() != null && !workout.getTrackPoints().isEmpty()) {
-            List<TrackPointResponse> pointResponse = workout.getTrackPoints().stream()
-                    .map(p -> TrackPointResponse.builder()
-                            .latitude(p.getLatitude())
-                            .longitude(p.getLongitude())
-                            .elevation(p.getElevation())
-                            .timestamp(p.getTimestamp())
-                            .speed(p.getSpeed())
-                            .build())
-                    .toList();
-            response.setTrackPoints(pointResponse);
-        }
+        return responseBuilder.build();
     }
-
-    return response;
-    }
-
 }

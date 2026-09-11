@@ -5,5 +5,6 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record WorkoutTemplateResponse(Long id, String templateName, List<TemplateExerciseResponse> exercises) {
+public record WorkoutTemplateResponse(Long id, String templateName,
+                                      List<TemplateExerciseResponse> exercises) {
 }

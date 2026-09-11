@@ -28,20 +28,22 @@ public class WorkoutTemplateService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
 
-        WorkoutTemplate workoutTemplate = new WorkoutTemplate();
-        workoutTemplate.setTemplateName(request.templateName());
-        workoutTemplate.setUser(user);
+        WorkoutTemplate workoutTemplate = WorkoutTemplate.builder()
+                .user(user)
+                .templateName(request.templateName())
+                .build();
 
         if(request.exercises() != null){
             for(TemplateExerciseRequest exReq : request.exercises()){
                 Exercise exercise = exerciseRepository.findById(exReq.exerciseId())
                         .orElseThrow(() -> new RuntimeException("Exercise not found " + exReq.exerciseId()));
 
-                TemplateExercise templateExercise = new TemplateExercise();
-                templateExercise.setExercise(exercise);
-                templateExercise.setOrderIndex(exReq.orderIndex());
-                templateExercise.setTargetSets(exReq.targetSets());
-                templateExercise.setWorkoutTemplate(workoutTemplate);
+                TemplateExercise templateExercise = TemplateExercise.builder()
+                        .exercise(exercise)
+                        .orderIndex(exReq.orderIndex())
+                        .targetSets(exReq.targetSets())
+                        .workoutTemplate(workoutTemplate)
+                        .build();
 
                 workoutTemplate.getExercises().add(templateExercise);
             }
@@ -80,12 +82,12 @@ public class WorkoutTemplateService {
                 Exercise exercise = exerciseRepository.findById(dto.exerciseId())
                         .orElseThrow(() -> new RuntimeException("Exercise not found " + dto.exerciseId()));
 
-                TemplateExercise te = new TemplateExercise();
-                te.setExercise(exercise);
-                te.setOrderIndex(dto.orderIndex());
-                te.setTargetSets(dto.targetSets());
-                te.setWorkoutTemplate(workoutTemplate);
-                return te;
+                return TemplateExercise.builder()
+                        .exercise(exercise)
+                        .orderIndex(dto.orderIndex())
+                        .targetSets(dto.targetSets())
+                        .workoutTemplate(workoutTemplate)
+                        .build();
             })
                     .toList();
 

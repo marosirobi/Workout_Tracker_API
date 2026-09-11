@@ -18,7 +18,8 @@ public class UserController {
     private final UserService userService;
 
     @PutMapping("/me")
-    public UserResponse updateMyAccount(Principal principal, @Valid @RequestBody UpdateUserRequest request){
+    public UserResponse updateMyAccount(Principal principal,
+                                        @Valid @RequestBody UpdateUserRequest request){
         return userService.updateUser(principal.getName(), request);
     }
 

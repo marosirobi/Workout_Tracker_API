@@ -1,9 +1,7 @@
 package com.marosirobi.workouttrackerapi.domain.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -11,6 +9,8 @@ import java.time.Instant;
 @Table(name = "refresh_tokens")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class RefreshToken {
 
@@ -21,7 +21,7 @@ public class RefreshToken {
     @Column(nullable = false, unique = true)
     private String token;
 
-    @Column(nullable = false)
+    @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
 
     @OneToOne(fetch = FetchType.LAZY)

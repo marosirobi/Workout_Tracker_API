@@ -25,11 +25,12 @@ public class RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("User not found " +userId));
 
         RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
-                .orElse(new RefreshToken());
-
-        refreshToken.setUser(user);
-        refreshToken.setToken(UUID.randomUUID().toString());
-        refreshToken.setExpiryDate(Instant.now().plusMillis(604800000L));
+                .orElse(RefreshToken.builder()
+                        .user(user)
+                        .token(UUID.randomUUID().toString())
+                        .expiryDate(Instant.now().plusMillis(604800000L))
+                        .build()
+                );
 
         return refreshTokenRepository.save(refreshToken);
     }

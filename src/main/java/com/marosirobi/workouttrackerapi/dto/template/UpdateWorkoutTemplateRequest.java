@@ -7,5 +7,6 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record UpdateWorkoutTemplateRequest(@NotBlank String templateName, @Valid List<UpdateTemplateExerciseRequest> exercises) {
+public record UpdateWorkoutTemplateRequest(@NotBlank String templateName,
+                                           @Valid List<UpdateTemplateExerciseRequest> exercises) {
 }
