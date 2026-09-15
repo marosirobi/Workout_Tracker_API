@@ -8,6 +8,10 @@ import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
+import com.marosirobi.workouttrackerapi.exception.DuplicateResourceException;
+import com.marosirobi.workouttrackerapi.exception.InvalidCredentialsException;
+import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
+import com.marosirobi.workouttrackerapi.exception.TokenRefreshException;
 import com.marosirobi.workouttrackerapi.mapper.UserMapper;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -30,10 +34,10 @@ public class UserService {
 
     public AuthResponse login(LoginRequest request){
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Wrong email or password!"));
+                .orElseThrow(() -> new InvalidCredentialsException("Wrong email or password!"));
 
         if(!passwordEncoder.matches(request.password(), user.getPassword())){
-            throw new RuntimeException("Wrong email or password!");
+            throw new InvalidCredentialsException("Wrong email or password!");
         }
 
         String accessToken = jwtService.generateToken(user.getEmail(), user.getId());
@@ -50,7 +54,7 @@ public class UserService {
     public UserResponse createUser(CreateUserRequest request){
 
         if(userRepository.findByEmail(request.email()).isPresent()){
-            throw new RuntimeException("This email adress is already taken.");
+            throw new DuplicateResourceException("This email adress is already taken.");
         }
 
         User newUser = User.builder()
@@ -68,13 +72,13 @@ public class UserService {
     public UserResponse updateUser(String email, UpdateUserRequest request){
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         boolean credentialsChanged = false;
 
         if(!user.getEmail().equals(request.email())){
             if(userRepository.findByEmail(request.email()).isPresent())
-                throw new RuntimeException("This email is already taken.");
+                throw new DuplicateResourceException("This email is already taken.");
 
             user.setEmail(request.email());
             credentialsChanged = true;
@@ -82,7 +86,7 @@ public class UserService {
 
         if(!user.getUsername().equals(request.username())){
             if(userRepository.findByUsername(request.username()).isPresent())
-                throw new RuntimeException("This username is already taken.");
+                throw new DuplicateResourceException("This username is already taken.");
 
             user.setUsername(request.username());
             credentialsChanged = true;
@@ -98,14 +102,14 @@ public class UserService {
     @Transactional
     public void deleteUser(String email){
         User user = userRepository.findByEmail(email)
-                        .orElseThrow(() -> new RuntimeException("User not found " + email));
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         userRepository.delete(user);
     }
 
     public UserResponse getUserByEmail(String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         return userMapper.mapToResponse(user);
     }
@@ -130,6 +134,6 @@ public class UserService {
                             .user(userMapper.mapToResponse(user))
                             .build();
                 })
-                .orElseThrow(() -> new RuntimeException("Invalid Refresh Token"));
+                .orElseThrow(() -> new TokenRefreshException("Invalid Refresh Token"));
     }
 }

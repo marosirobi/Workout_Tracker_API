@@ -2,6 +2,7 @@ package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
 import com.marosirobi.workouttrackerapi.dto.template.*;
+import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.mapper.WorkoutTemplateMapper;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
 import com.marosirobi.workouttrackerapi.repository.TemplateExerciseRepository;
@@ -28,7 +29,7 @@ public class WorkoutTemplateService {
     public WorkoutTemplateResponse createTemplate(CreateWorkoutTemplateRequest request, String email){
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         WorkoutTemplate workoutTemplate = WorkoutTemplate.builder()
                 .user(user)
@@ -38,7 +39,7 @@ public class WorkoutTemplateService {
         if(request.exercises() != null){
             for(TemplateExerciseRequest exReq : request.exercises()){
                 Exercise exercise = exerciseRepository.findById(exReq.exerciseId())
-                        .orElseThrow(() -> new RuntimeException("Exercise not found " + exReq.exerciseId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exReq.exerciseId()));
 
                 TemplateExercise templateExercise = TemplateExercise.builder()
                         .exercise(exercise)
@@ -57,7 +58,7 @@ public class WorkoutTemplateService {
 
     public List<WorkoutTemplateResponse> getMyTemplates(String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         return workoutTemplateRepository.findByUserId(user.getId())
                 .stream()
@@ -68,10 +69,10 @@ public class WorkoutTemplateService {
     @Transactional
     public WorkoutTemplateResponse updateTemplate(Long id, UpdateWorkoutTemplateRequest request, String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         WorkoutTemplate workoutTemplate = workoutTemplateRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new RuntimeException("Workout template not found " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Workout template not found " + id));
 
         workoutTemplate.setTemplateName(request.templateName());
 
@@ -82,7 +83,7 @@ public class WorkoutTemplateService {
         if(request.exercises() != null && !request.exercises().isEmpty()){
             List<TemplateExercise> updatedExercises = request.exercises().stream().map(dto ->{
                 Exercise exercise = exerciseRepository.findById(dto.exerciseId())
-                        .orElseThrow(() -> new RuntimeException("Exercise not found " + dto.exerciseId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + dto.exerciseId()));
 
                 return TemplateExercise.builder()
                         .exercise(exercise)
@@ -102,10 +103,10 @@ public class WorkoutTemplateService {
     @Transactional
     public void deleteTemplate(Long id, String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         if(!workoutTemplateRepository.existsByIdAndUserId(id, user.getId())){
-            throw new RuntimeException("Workout template doesn't exist or you don't have permission: " + id);
+            throw new ResourceNotFoundException("Workout template doesn't exist or you don't have permission: " + id);
         }
         workoutTemplateRepository.deleteById(id);
     }

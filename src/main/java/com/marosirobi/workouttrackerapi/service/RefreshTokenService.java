@@ -2,6 +2,8 @@ package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.RefreshToken;
 import com.marosirobi.workouttrackerapi.domain.entity.User;
+import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
+import com.marosirobi.workouttrackerapi.exception.TokenRefreshException;
 import com.marosirobi.workouttrackerapi.repository.RefreshTokenRepository;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -22,7 +24,7 @@ public class RefreshTokenService {
     @Transactional
     public RefreshToken createRefreshToken(Long userId){
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found " +userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " +userId));
 
         RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
                 .orElse(RefreshToken.builder()
@@ -38,7 +40,7 @@ public class RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken refreshToken){
         if(refreshToken.getExpiryDate().compareTo(Instant.now()) < 0){
             refreshTokenRepository.delete(refreshToken);
-            throw new RuntimeException("Refresh Token is invalid");
+            throw new TokenRefreshException("Refresh Token is invalid");
         }
         return refreshToken;
     }

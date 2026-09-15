@@ -13,6 +13,9 @@ import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutSummaryResponse;
+import com.marosirobi.workouttrackerapi.exception.IllegalArgumentException;
+import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
+import com.marosirobi.workouttrackerapi.exception.UnauthorizedAccessException;
 import com.marosirobi.workouttrackerapi.mapper.WorkoutMapper;
 import com.marosirobi.workouttrackerapi.repository.*;
 import jakarta.transaction.Transactional;
@@ -43,12 +46,12 @@ public class WorkoutService {
     public WorkoutResponse createWorkout(CreateWorkoutRequest request, String email){
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         WorkoutTemplate template = null;
         if(request.templateId() != null)
             template = workoutTemplateRepository.findById(request.templateId())
-                    .orElseThrow(() -> new RuntimeException("Workout template not found " + request.templateId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Workout template not found " + request.templateId()));
 
         Workout workout = Workout.builder()
                 .user(user)
@@ -88,17 +91,17 @@ public class WorkoutService {
     @Transactional
     public void deleteWorkout(Long id, String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         if(!workoutRepository.existsByIdAndUserId(id, user.getId())){
-            throw new RuntimeException("Workout doesn't exist or you don't have permission: " + id);
+            throw new ResourceNotFoundException("Workout doesn't exist or you don't have permission: " + id);
         }
         workoutRepository.deleteById(id);
     }
 
     public Page<WorkoutSummaryResponse> getUserWorkouts(String email, int page, int size){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
         Page<Workout> workoutPage = workoutRepository.findByUserId(user.getId(), pageable);
@@ -132,10 +135,10 @@ public class WorkoutService {
 
     public WorkoutResponse getWorkoutById(Long id, String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new RuntimeException("Workout not found or you don't have permission: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Workout not found or you don't have permission: " + id));
 
         return workoutMapper.mapToResponse(workout);
     }
@@ -143,10 +146,10 @@ public class WorkoutService {
     @Transactional
     public WorkoutResponse updateWorkout(Long id, UpdateWorkoutRequest request, String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new RuntimeException("Workout not found " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Workout not found " + id));
 
         if(request.endTime() != null){
             workout.setEndTime(request.endTime());
@@ -164,7 +167,7 @@ public class WorkoutService {
             for(WorkoutExerciseRequest exReq : request.exercises()){
 
                 Exercise exercise = exerciseRepository.findById(exReq.exerciseId())
-                        .orElseThrow(() -> new RuntimeException("Exercise not found " + exReq.exerciseId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exReq.exerciseId()));
 
                 WorkoutExercise workoutExercise = WorkoutExercise.builder()
                         .workout(workout)
@@ -195,17 +198,17 @@ public class WorkoutService {
     @Transactional
     public WorkoutResponse saveCardioData(Long workoutId, CardioDataRequest request, String email){
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Workout workout = workoutRepository.findById(workoutId)
-                .orElseThrow(() -> new RuntimeException("Workout not found " + workoutId));
+                .orElseThrow(() -> new ResourceNotFoundException("Workout not found " + workoutId));
 
         if(!workout.getUser().getId().equals(user.getId())){
-            throw new RuntimeException("You dont have access to this workout");
+            throw new UnauthorizedAccessException("You dont have access to this workout");
         }
 
         if(!(workout.getType() == WorkoutType.CARDIO)){
-            throw new RuntimeException("Invalid workout type " + workout.getType());
+            throw new IllegalArgumentException("Invalid workout type " + workout.getType());
         }
 
         CardioStats stats = CardioStats.builder()

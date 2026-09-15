@@ -3,6 +3,7 @@ package com.marosirobi.workouttrackerapi.service;
 import com.marosirobi.workouttrackerapi.domain.entity.Exercise;
 import com.marosirobi.workouttrackerapi.domain.entity.User;
 import com.marosirobi.workouttrackerapi.dto.stat.PersonalRecordResponse;
+import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
 import com.marosirobi.workouttrackerapi.repository.ExerciseSetRepository;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
@@ -20,10 +21,10 @@ public class StatService {
     public PersonalRecordResponse getPersonalRecord(Long exerciseId, String email){
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Exercise exercise = exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new RuntimeException("Exercise not found " + exerciseId));
+                .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exerciseId));
 
         Double maxWeight = exerciseSetRepository.findPersonalRecord(user.getId(), exercise.getId());
 
