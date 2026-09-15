@@ -2,6 +2,7 @@ package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
 import com.marosirobi.workouttrackerapi.dto.template.*;
+import com.marosirobi.workouttrackerapi.mapper.WorkoutTemplateMapper;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
 import com.marosirobi.workouttrackerapi.repository.TemplateExerciseRepository;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
@@ -21,6 +22,7 @@ public class WorkoutTemplateService {
     private final WorkoutTemplateRepository workoutTemplateRepository;
     private final UserRepository userRepository;
     private final ExerciseRepository exerciseRepository;
+    private final WorkoutTemplateMapper workoutTemplateMapper;
 
     @Transactional
     public WorkoutTemplateResponse createTemplate(CreateWorkoutTemplateRequest request, String email){
@@ -50,7 +52,7 @@ public class WorkoutTemplateService {
         }
 
         WorkoutTemplate savedTemplate = workoutTemplateRepository.save(workoutTemplate);
-        return mapToResponse(savedTemplate);
+        return workoutTemplateMapper.mapToResponse(savedTemplate);
     }
 
     public List<WorkoutTemplateResponse> getMyTemplates(String email){
@@ -59,7 +61,7 @@ public class WorkoutTemplateService {
 
         return workoutTemplateRepository.findByUserId(user.getId())
                 .stream()
-                .map(this::mapToResponse)
+                .map(workoutTemplateMapper::mapToResponse)
                 .toList();
     }
 
@@ -94,7 +96,7 @@ public class WorkoutTemplateService {
             workoutTemplate.getExercises().addAll(updatedExercises);
         }
         workoutTemplateRepository.save(workoutTemplate);
-        return mapToResponse(workoutTemplate);
+        return workoutTemplateMapper.mapToResponse(workoutTemplate);
     }
 
     @Transactional
@@ -106,21 +108,5 @@ public class WorkoutTemplateService {
             throw new RuntimeException("Workout template doesn't exist or you don't have permission: " + id);
         }
         workoutTemplateRepository.deleteById(id);
-    }
-
-    private WorkoutTemplateResponse mapToResponse(WorkoutTemplate template){
-        return WorkoutTemplateResponse.builder()
-                .templateName(template.getTemplateName())
-                .id(template.getId())
-                .exercises(template.getExercises() == null ? null :
-                        template.getExercises().stream().map(te -> TemplateExerciseResponse.builder()
-                                .id(te.getId())
-                                .orderIndex(te.getOrderIndex())
-                                .targetSets(te.getTargetSets())
-                                .exerciseId(te.getExercise() == null ? null : te.getExercise().getId())
-                                .exerciseName(te.getExercise() == null ? null : te.getExercise().getExerciseName())
-                                .build()
-                        ).toList())
-                .build();
     }
 }

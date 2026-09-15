@@ -21,13 +21,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiError> handleRuntimeException(RuntimeException ex, WebRequest request){
 
-        ApiError apiError = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage(),
-                request.getDescription(false).replace("uri=","")
-        );
+        ApiError apiError = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=",""))
+                .build();
 
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }

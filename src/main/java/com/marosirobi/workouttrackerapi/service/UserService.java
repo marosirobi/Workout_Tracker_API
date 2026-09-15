@@ -8,6 +8,7 @@ import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
+import com.marosirobi.workouttrackerapi.mapper.UserMapper;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final UserMapper userMapper;
 
     public AuthResponse login(LoginRequest request){
         User user = userRepository.findByEmail(request.email())
@@ -40,7 +42,7 @@ public class UserService {
         return AuthResponse.builder()
                 .token(accessToken)
                 .refreshToken(refreshToken.getToken())
-                .user(mapToResponse(user))
+                .user(userMapper.mapToResponse(user))
                 .build();
     }
 
@@ -59,7 +61,7 @@ public class UserService {
 
         User savedUser = userRepository.save(newUser);
 
-        return mapToResponse(savedUser);
+        return userMapper.mapToResponse(savedUser);
     }
 
     @Transactional
@@ -90,7 +92,7 @@ public class UserService {
 
         String newAccessToken = credentialsChanged ? jwtService.generateToken(user.getEmail(), user.getId()) : null;
 
-        return mapToResponse(updatedUser, newAccessToken);
+        return userMapper.mapToResponse(updatedUser, newAccessToken);
     }
 
     @Transactional
@@ -105,13 +107,13 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
 
-        return mapToResponse(user);
+        return userMapper.mapToResponse(user);
     }
 
     public List<UserResponse> getAllUsers(){
         return userRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(userMapper::mapToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -125,23 +127,9 @@ public class UserService {
                     return AuthResponse.builder()
                             .token(newAccessToken)
                             .refreshToken(request.refreshToken())
-                            .user(mapToResponse(user))
+                            .user(userMapper.mapToResponse(user))
                             .build();
                 })
                 .orElseThrow(() -> new RuntimeException("Invalid Refresh Token"));
-    }
-
-    private UserResponse mapToResponse(User user, String accessToken){
-        return UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .username(user.getUsername())
-                .accessToken(accessToken)
-                .createdAt(user.getCreatedAt())
-                .build();
-    }
-
-    private UserResponse mapToResponse(User user){
-        return  mapToResponse(user, null);
     }
 }
