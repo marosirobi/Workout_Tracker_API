@@ -104,7 +104,7 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
-        Page<Workout> workoutPage = workoutRepository.findByUserId(user.getId(), pageable);
+        Page<Workout> workoutPage = workoutRepository.findByUserIdAndEndTimeIsNotNull(user.getId(), pageable);
 
         return workoutPage.map(workout -> {
             Double distance = null;
@@ -162,6 +162,9 @@ public class WorkoutService {
         }
 
         if(request.exercises() != null){
+            if (workout.getEndTime() != null) {
+                throw new IllegalArgumentException("this workout has already ended");
+            }
             workout.getExercises().clear();
 
             for(WorkoutExerciseRequest exReq : request.exercises()){
@@ -211,6 +214,10 @@ public class WorkoutService {
             throw new IllegalArgumentException("Invalid workout type " + workout.getType());
         }
 
+        if (workout.getEndTime() != null) {
+            throw new IllegalArgumentException("This workout has already ended");
+        }
+
         CardioStats stats = CardioStats.builder()
                 .workout(workout)
                 .totalDistance(request.stats().totalDistance())
@@ -235,7 +242,13 @@ public class WorkoutService {
 
             trackPointRepository.saveAll(trackPointsToSave);
         }
-
+        
+        if (request.workoutTitle() != null) {
+            workout.setWorkoutTitle(request.workoutTitle());
+        }
+        if (request.workoutNote() != null) {
+            workout.setWorkoutNote(request.workoutNote());
+        }
         workout.setEndTime(LocalDateTime.now());
 
         workoutRepository.save(workout);

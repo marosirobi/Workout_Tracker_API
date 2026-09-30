@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface WorkoutRepository extends JpaRepository<Workout, Long> {
 
-    Page<Workout> findByUserId(Long userId, Pageable pageable);
+    Page<Workout> findByUserIdAndEndTimeIsNotNull(Long userId, Pageable pageable);
     Optional<Workout> findByIdAndUserId(Long id, Long userId);
     boolean existsByIdAndUserId(Long id, Long userId);
 }

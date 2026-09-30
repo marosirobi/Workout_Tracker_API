@@ -7,6 +7,8 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record CardioDataRequest(@NotNull CardioStatsResponse stats,
+public record CardioDataRequest(@NotNull String workoutTitle,
+                                String workoutNote,
+                                @NotNull CardioStatsResponse stats,
                                 @Valid List<TrackPointResponse> trackPoints) {
 }
