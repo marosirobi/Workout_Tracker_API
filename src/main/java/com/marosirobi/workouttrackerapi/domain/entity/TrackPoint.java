@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.mapping.Join;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,7 +33,7 @@ public class TrackPoint {
     private Double speed;
 
     @Column(nullable = false)
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_id", nullable = false)

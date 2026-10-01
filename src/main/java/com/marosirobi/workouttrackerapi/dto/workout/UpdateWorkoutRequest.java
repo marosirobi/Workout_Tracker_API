@@ -6,11 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Builder
 public record UpdateWorkoutRequest (@NotNull String workoutTitle,
                                     String workoutNote,
-                                    LocalDateTime endTime,
+                                    @NotNull Instant endTime,
                                     @Valid List<WorkoutExerciseRequest> exercises) { }

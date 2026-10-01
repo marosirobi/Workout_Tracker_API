@@ -3,12 +3,8 @@ package com.marosirobi.workouttrackerapi.service;
 import com.marosirobi.workouttrackerapi.domain.entity.*;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
-import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsResponse;
-import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
-import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
-import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
@@ -27,7 +23,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -249,7 +244,7 @@ public class WorkoutService {
         if (request.workoutNote() != null) {
             workout.setWorkoutNote(request.workoutNote());
         }
-        workout.setEndTime(LocalDateTime.now());
+        workout.setEndTime(request.endTime());
 
         workoutRepository.save(workout);
 

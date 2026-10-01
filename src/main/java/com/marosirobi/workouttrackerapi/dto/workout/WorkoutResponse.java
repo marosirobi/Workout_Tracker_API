@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,8 +31,8 @@ public record WorkoutResponse(Long id,
                               String workoutTitle,
                               String workoutNote,
                               WorkoutType type,
-                              LocalDateTime startTime,
-                              LocalDateTime endTime,
+                              Instant startTime,
+                              Instant endTime,
                               //STRENGTH
                               List<WorkoutExerciseResponse> exercises,
                               //CARDIO

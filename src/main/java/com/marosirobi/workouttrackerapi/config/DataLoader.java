@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,13 +57,13 @@ public class DataLoader implements CommandLineRunner {
             Workout workout = new Workout();
             workout.setType(WorkoutType.STRENGTH);
             workout.setUser(testUser);
-            workout.setStartTime(LocalDateTime.now());
+            workout.setStartTime(Instant.now());
             workoutRepository.save(workout);
 
             Workout workout2 = new Workout();
             workout2.setType(WorkoutType.CARDIO);
             workout2.setUser(testUser);
-            workout2.setStartTime(LocalDateTime.now());
+            workout2.setStartTime(Instant.now());
             workoutRepository.save(workout2);
 
             System.out.println("Test workout is saved!");

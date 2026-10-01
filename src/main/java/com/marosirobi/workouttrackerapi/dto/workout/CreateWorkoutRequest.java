@@ -5,9 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Builder
 public record CreateWorkoutRequest (@NotNull WorkoutType type,
-                                    @NotNull LocalDateTime startTime,
+                                    @NotNull Instant startTime,
                                     Long templateId) { }
