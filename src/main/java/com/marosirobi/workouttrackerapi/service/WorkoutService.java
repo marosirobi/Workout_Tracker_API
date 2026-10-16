@@ -146,9 +146,6 @@ public class WorkoutService {
         Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workout not found " + id));
 
-        if(request.endTime() != null){
-            workout.setEndTime(request.endTime());
-        }
         if(request.workoutTitle() != null){
             workout.setWorkoutTitle(request.workoutTitle());
         }
@@ -187,6 +184,10 @@ public class WorkoutService {
                 }
                 workout.getExercises().add(workoutExercise);
             }
+        }
+
+        if(request.endTime() != null){
+            workout.setEndTime(request.endTime());
         }
 
         Workout updatedWorkout = workoutRepository.save(workout);
@@ -244,7 +245,9 @@ public class WorkoutService {
         if (request.workoutNote() != null) {
             workout.setWorkoutNote(request.workoutNote());
         }
-        workout.setEndTime(request.endTime());
+        if(request.endTime() != null){
+            workout.setEndTime(request.endTime());
+        }
 
         workoutRepository.save(workout);
 
