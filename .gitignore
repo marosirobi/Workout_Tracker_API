@@ -54,3 +54,6 @@ logs/
 .env
 application-local.properties
 application-local.yml
+
+### Local database ###
+data/
