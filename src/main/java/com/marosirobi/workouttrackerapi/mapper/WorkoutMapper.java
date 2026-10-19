@@ -74,6 +74,7 @@ public class WorkoutMapper {
                                 .latitude(tp.getLatitude())
                                 .longitude(tp.getLongitude())
                                 .speed(tp.getSpeed())
+                                .segment(tp.getSegment() != null ? tp.getSegment() : 0)
                                 .elevation(tp.getElevation())
                                 .build()
                         ).toList();

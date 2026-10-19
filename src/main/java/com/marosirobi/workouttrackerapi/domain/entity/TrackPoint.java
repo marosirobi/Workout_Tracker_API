@@ -35,6 +35,9 @@ public class TrackPoint {
     @Column(nullable = false)
     private Instant timestamp;
 
+    @Column
+    private Integer segment;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_id", nullable = false)
     private Workout workout;

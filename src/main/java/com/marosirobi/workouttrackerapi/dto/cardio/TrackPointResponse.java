@@ -11,5 +11,6 @@ public record TrackPointResponse(@NotNull Double latitude,
                                  @NotNull Double longitude,
                                  @NotNull Double elevation,
                                  @NotNull Double speed,
+                                 Integer segment,
                                  @NotNull Instant timestamp) {
 }

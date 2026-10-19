@@ -15,5 +15,6 @@ public record WorkoutSummaryResponse(Long id,
 
                                      Double totalDistance,
                                      String avgPace,
+                                     Integer movingTimeSeconds,
                                      Long durationSeconds) {
 }

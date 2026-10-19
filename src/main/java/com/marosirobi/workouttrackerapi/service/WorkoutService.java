@@ -122,6 +122,8 @@ public class WorkoutService {
                     .startTime(workout.getStartTime())
                     .endTime(workout.getEndTime())
                     .durationSeconds(duration)
+                    .movingTimeSeconds(workout.getCardioStats() != null
+                            ? workout.getCardioStats().getMovingTimeSeconds() : null)
                     .avgPace(pace)
                     .totalDistance(distance)
                     .build();
@@ -232,6 +234,7 @@ public class WorkoutService {
                                 .longitude(dto.longitude())
                                 .elevation(dto.elevation())
                                 .speed(dto.speed())
+                                .segment(dto.segment() != null ? dto.segment() : 0)
                                 .timestamp(dto.timestamp())
                                 .build())
                     .toList();

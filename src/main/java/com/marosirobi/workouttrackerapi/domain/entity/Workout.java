@@ -3,6 +3,7 @@ package com.marosirobi.workouttrackerapi.domain.entity;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.core.annotation.Order;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -55,5 +56,6 @@ public class Workout {
 
     @Builder.Default
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("timestamp ASC")
     private List<TrackPoint> trackPoints = new ArrayList<>();
 }
