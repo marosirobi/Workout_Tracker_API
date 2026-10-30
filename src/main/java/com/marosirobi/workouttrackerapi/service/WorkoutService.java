@@ -35,6 +35,7 @@ public class WorkoutService {
     private final ExerciseRepository exerciseRepository;
     private final TrackPointRepository trackPointRepository;
     private final CardioStatsRepository cardioStatsRepository;
+    private final StatService statService;
     private final WorkoutMapper workoutMapper;
 
     @Transactional
@@ -240,6 +241,7 @@ public class WorkoutService {
                     .toList();
 
             trackPointRepository.saveAll(trackPointsToSave);
+            statService.calculateAndSave(workout, trackPointsToSave);
         }
         
         if (request.workoutTitle() != null) {

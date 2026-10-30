@@ -5,6 +5,7 @@ import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsResponse;
 import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
+import com.marosirobi.workouttrackerapi.dto.stat.BestEffortResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,4 +38,5 @@ public record WorkoutResponse(Long id,
                               List<WorkoutExerciseResponse> exercises,
                               //CARDIO
                               CardioStatsResponse cardioStats,
-                              List<TrackPointResponse> trackPoints) { }
+                              List<TrackPointResponse> trackPoints,
+                              List<BestEffortResponse> bestEfforts) { }

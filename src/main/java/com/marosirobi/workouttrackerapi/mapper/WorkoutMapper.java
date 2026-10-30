@@ -1,18 +1,26 @@
 package com.marosirobi.workouttrackerapi.mapper;
 
+import com.marosirobi.workouttrackerapi.domain.entity.BestEffort;
 import com.marosirobi.workouttrackerapi.domain.entity.Workout;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsResponse;
 import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
+import com.marosirobi.workouttrackerapi.dto.stat.BestEffortResponse;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
+import com.marosirobi.workouttrackerapi.repository.BestEffortRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class WorkoutMapper {
+
+    private final BestEffortRepository bestEffortRepository;
 
     public WorkoutResponse mapToResponse(Workout workout){
         WorkoutResponse.WorkoutResponseBuilder responseBuilder = WorkoutResponse.builder()
@@ -79,6 +87,23 @@ public class WorkoutMapper {
                                 .build()
                         ).toList();
                 responseBuilder.trackPoints(trackPoints);
+            }
+            if(workout.getBestEfforts() != null && !workout.getBestEfforts().isEmpty()){
+                Long userId = workout.getUser().getId();
+
+                List<BestEffortResponse> efforts = workout.getBestEfforts()
+                        .stream()
+                        .sorted(Comparator.comparing(BestEffort::getDistanceMeters))
+                        .map(effort -> BestEffortResponse.builder()
+                                .distanceMeters(effort.getDistanceMeters())
+                                .durationSeconds(effort.getDurationSeconds())
+                                .startOffsetMeters(effort.getStartOffsetMeters())
+                                .rank((int) bestEffortRepository
+                                        .countByWorkoutUserIdAndDistanceMetersAndDurationSecondsLessThan(
+                                                userId, effort.getDistanceMeters(), effort.getDurationSeconds()) + 1)
+                                .build()
+                        ).toList();
+            responseBuilder.bestEfforts(efforts);
             }
         }
 

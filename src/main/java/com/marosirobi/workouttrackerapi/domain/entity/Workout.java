@@ -58,4 +58,8 @@ public class Workout {
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("timestamp ASC")
     private List<TrackPoint> trackPoints = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BestEffort> bestEfforts = new ArrayList<>();
 }
