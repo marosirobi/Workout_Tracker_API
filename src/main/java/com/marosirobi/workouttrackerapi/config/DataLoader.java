@@ -6,6 +6,7 @@ import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Order(2)
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -41,10 +43,8 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("TestUser data is saved!");
 
             //add test exercises
-            Exercise benchPress = new Exercise();
-            benchPress.setExerciseName("Bench press");
-            benchPress.setMuscleGroup(MuscleGroup.CHEST);
-            exerciseRepository.save(benchPress);
+            Exercise benchPress = exerciseRepository.findByExerciseName("Bench press")
+                    .orElseThrow();
 
             Exercise squat = new Exercise();
             squat.setExerciseName("Squat");
