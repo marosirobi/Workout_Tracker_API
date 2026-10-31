@@ -33,5 +33,6 @@ public class WorkoutExercise {
 
     @Builder.Default
     @OneToMany(mappedBy = "workoutExercise", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("setNumber ASC")
     private List<ExerciseSet> sets = new ArrayList<>();
 }

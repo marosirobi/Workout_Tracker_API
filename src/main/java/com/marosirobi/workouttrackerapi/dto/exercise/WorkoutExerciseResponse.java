@@ -10,4 +10,5 @@ public record WorkoutExerciseResponse (Long id,
                                        Long exerciseId,
                                        String exerciseName,
                                        Integer orderIndex,
+                                       Integer weightRank,
                                        List<ExerciseSetResponse> sets) { }

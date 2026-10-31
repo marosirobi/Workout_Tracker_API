@@ -1,6 +1,7 @@
 package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
+import com.marosirobi.workouttrackerapi.dto.stat.ExerciseMaxWeight;
 import com.marosirobi.workouttrackerapi.dto.stat.PersonalRecordResponse;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.repository.BestEffortRepository;
@@ -13,9 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,13 +30,6 @@ public class StatService {
             List.of(400, 1000, 1609, 5000, 10000, 21098, 42195);
 
     private static final double REALISTIC_MAX_SPEED_MS = 20.0;
-
-    @Transactional
-    public void calculateAndSave(Workout workout, List<TrackPoint> points){
-        List<BestEffort> efforts = calculate(workout,points);
-        bestEffortRepository.saveAll(efforts);
-        workout.getBestEfforts().addAll(efforts);
-    }
 
     List<BestEffort> calculate(Workout workout, List<TrackPoint> rawPoints){
         if(rawPoints == null || rawPoints.size() < 2){
@@ -116,6 +109,62 @@ public class StatService {
         return segA == segB;
     }
 
+    private static boolean isBetter(ExerciseMaxWeight other, ExerciseMaxWeight current){
+        if(other.workoutId().equals(current.workoutId())) return false;
+        if(other.maxWeight() == null) return false;
+
+        int comp = Double.compare(other.maxWeight(), current.maxWeight());
+        if(comp != 0){
+            return comp > 0;
+        }
+        return other.startTime().isBefore(current.startTime());
+    }
+
+    public Map<Long, Integer> computeWeightRanks(Workout workout){
+        if(workout.getEndTime() == null || workout.getExercises() == null || workout.getExercises().isEmpty()){
+            return Map.of();
+        }
+
+        Set<Long> exerciseIds = workout.getExercises().stream()
+                .map(we -> we.getExercise().getId())
+                .collect(Collectors.toSet());
+
+        List<ExerciseMaxWeight> rows = exerciseSetRepository.findMaxWeightPerWorkout(workout.getUser().getId(), exerciseIds);
+
+        Map<Long, List<ExerciseMaxWeight>> historyByExercise = rows.stream()
+                .collect(Collectors.groupingBy(ExerciseMaxWeight::exerciseId));
+
+        Map<Long, Integer> ranks = new HashMap<>();
+
+        historyByExercise.forEach((exerciseId, history) -> {
+            ExerciseMaxWeight current = history.stream()
+                    .filter(row -> row.workoutId().equals(workout.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (current == null) return;
+            if (current.maxWeight() == null || current.maxWeight() <= 0) return;
+
+            boolean hasEarlierWorkout = history.stream()
+                    .anyMatch(row -> row.startTime().isBefore(current.startTime()));
+            if (!hasEarlierWorkout) return;
+
+            long betterCount = history.stream()
+                    .filter(row -> isBetter(row, current)).count();
+
+            ranks.put(exerciseId, (int) betterCount + 1);
+        });
+
+        return ranks;
+    }
+
+    @Transactional
+    public void calculateAndSave(Workout workout, List<TrackPoint> points){
+        List<BestEffort> efforts = calculate(workout,points);
+        bestEffortRepository.saveAll(efforts);
+        workout.getBestEfforts().addAll(efforts);
+    }
+
     public PersonalRecordResponse getPersonalRecord(Long exerciseId, String email){
 
         User user = userRepository.findByEmail(email)
@@ -134,4 +183,6 @@ public class StatService {
                 .exerciseName(exercise.getExerciseName())
                 .build();
     }
+
+
 }

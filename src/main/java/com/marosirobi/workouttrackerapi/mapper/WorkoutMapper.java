@@ -10,17 +10,20 @@ import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
 import com.marosirobi.workouttrackerapi.dto.stat.BestEffortResponse;
 import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
 import com.marosirobi.workouttrackerapi.repository.BestEffortRepository;
+import com.marosirobi.workouttrackerapi.service.StatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class WorkoutMapper {
 
     private final BestEffortRepository bestEffortRepository;
+    private final StatService statService;
 
     public WorkoutResponse mapToResponse(Workout workout){
         WorkoutResponse.WorkoutResponseBuilder responseBuilder = WorkoutResponse.builder()
@@ -36,6 +39,8 @@ public class WorkoutMapper {
                 responseBuilder.templateId(workout.getTemplate().getId());
             }
             if(workout.getExercises() != null){
+                Map<Long, Integer> weightRanks = statService.computeWeightRanks(workout);
+
                 List<WorkoutExerciseResponse> exerciseResponses = workout.getExercises()
                         .stream()
                         .map(we -> {
@@ -46,6 +51,7 @@ public class WorkoutMapper {
                             if(we.getExercise() != null){
                                 weResponseBuilder
                                         .exerciseId(we.getExercise().getId())
+                                        .weightRank(weightRanks.get(we.getExercise().getId()))
                                         .exerciseName(we.getExercise().getExerciseName());
                             }
 

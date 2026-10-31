@@ -28,5 +28,6 @@ public class WorkoutTemplate {
 
     @Builder.Default
     @OneToMany(mappedBy = "workoutTemplate", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
     private List<TemplateExercise> exercises = new ArrayList<>();
 }
