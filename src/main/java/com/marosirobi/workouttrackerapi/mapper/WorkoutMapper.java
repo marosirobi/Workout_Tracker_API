@@ -51,6 +51,7 @@ public class WorkoutMapper {
                             if(we.getExercise() != null){
                                 weResponseBuilder
                                         .exerciseId(we.getExercise().getId())
+                                        .muscleGroup(we.getExercise().getMuscleGroup())
                                         .weightRank(weightRanks.get(we.getExercise().getId()))
                                         .exerciseName(we.getExercise().getExerciseName());
                             }
