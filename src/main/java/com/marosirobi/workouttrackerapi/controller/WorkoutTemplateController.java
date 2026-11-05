@@ -22,7 +22,7 @@ public class WorkoutTemplateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutTemplateResponse createTemplate(@RequestBody CreateWorkoutTemplateRequest request,
+    public WorkoutTemplateResponse createTemplate(@RequestBody @Valid CreateWorkoutTemplateRequest request,
                                                   Principal principal){
         return workoutTemplateService.createTemplate(request, principal.getName());
     }

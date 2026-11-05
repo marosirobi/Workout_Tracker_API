@@ -13,6 +13,10 @@ public record WorkoutSummaryResponse(Long id,
                                      Instant startTime,
                                      Instant endTime,
 
+                                     Double totalVolume,
+                                     Integer totalSets,
+                                     Integer exerciseCount,
+
                                      Double totalDistance,
                                      String avgPace,
                                      Integer movingTimeSeconds,

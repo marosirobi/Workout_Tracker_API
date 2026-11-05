@@ -1,5 +1,6 @@
 package com.marosirobi.workouttrackerapi.controller;
 
+import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
@@ -43,9 +44,10 @@ public class WorkoutController {
 
     @GetMapping
     public Page<WorkoutSummaryResponse> getUserWorkouts(Principal principal,
-                                                                 @RequestParam(defaultValue = "10") int size,
-                                                                 @RequestParam(defaultValue = "0") int page){
-        return workoutService.getUserWorkouts(principal.getName(), page, size);
+                                                        @RequestParam(defaultValue = "10") int size,
+                                                        @RequestParam(required = false)WorkoutType type,
+                                                        @RequestParam(defaultValue = "0") int page){
+        return workoutService.getUserWorkouts(principal.getName(), page, size, type);
     }
 
     @GetMapping("/{id}")

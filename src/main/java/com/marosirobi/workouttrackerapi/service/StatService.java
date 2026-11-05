@@ -147,7 +147,7 @@ public class StatService {
 
             boolean hasEarlierWorkout = history.stream()
                     .anyMatch(row -> row.startTime().isBefore(current.startTime()));
-            if (!hasEarlierWorkout) return;
+            //if (!hasEarlierWorkout) return;
 
             long betterCount = history.stream()
                     .filter(row -> isBetter(row, current)).count();

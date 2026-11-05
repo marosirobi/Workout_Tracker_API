@@ -45,10 +45,13 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         WorkoutTemplate template = null;
-        if(request.templateId() != null)
-            template = workoutTemplateRepository.findById(request.templateId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Workout template not found " + request.templateId()));
+        if(request.templateId() != null) {
+            if (request.type() != WorkoutType.STRENGTH)
+                throw new IllegalArgumentException("Templates can only be used for strength workouts");
 
+            template = workoutTemplateRepository.findByIdAndUserId(request.templateId(), user.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Workout template not found " + request.templateId()));
+        }
         Workout workout = Workout.builder()
                 .user(user)
                 .type(request.type())
@@ -95,24 +98,42 @@ public class WorkoutService {
         workoutRepository.deleteById(id);
     }
 
-    public Page<WorkoutSummaryResponse> getUserWorkouts(String email, int page, int size){
+    @Transactional
+    public Page<WorkoutSummaryResponse> getUserWorkouts(String email, int page, int size, WorkoutType type){
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
-        Page<Workout> workoutPage = workoutRepository.findByUserIdAndEndTimeIsNotNull(user.getId(), pageable);
+        Page<Workout> workoutPage = type == null ?
+                workoutRepository.findByUserIdAndEndTimeIsNotNull(user.getId(), pageable) :
+                workoutRepository.findByUserIdAndTypeAndEndTimeIsNotNull(user.getId(), pageable, type);
 
         return workoutPage.map(workout -> {
             Double distance = null;
             String pace = null;
+            Integer movingTime = null;
 
             if(workout.getCardioStats() != null){
                 distance = workout.getCardioStats().getTotalDistance();
                 pace = workout.getCardioStats().getAvgPace();
+                movingTime = workout.getCardioStats().getMovingTimeSeconds();
+            }
+
+            Double totalVolume = null;
+            Integer totalSets = null;
+            Integer exerciseCount = null;
+
+            if(workout.getType() == WorkoutType.STRENGTH && workout.getExercises() != null){
+                exerciseCount = workout.getExercises().size();
+                totalSets = workout.getExercises().stream()
+                        .mapToInt(we -> we.getSets().size()).sum();
+                totalVolume = workout.getExercises().stream()
+                        .flatMap(we -> we.getSets().stream())
+                        .mapToDouble(set -> set.getWeight() * set.getReps())
+                        .sum();
             }
 
             Long duration = 0L;
-
             if(workout.getStartTime() != null && workout.getEndTime() != null){
                 duration = Duration.between(workout.getStartTime(), workout.getEndTime()).getSeconds();
             }
@@ -123,10 +144,12 @@ public class WorkoutService {
                     .startTime(workout.getStartTime())
                     .endTime(workout.getEndTime())
                     .durationSeconds(duration)
-                    .movingTimeSeconds(workout.getCardioStats() != null
-                            ? workout.getCardioStats().getMovingTimeSeconds() : null)
+                    .movingTimeSeconds(movingTime)
                     .avgPace(pace)
                     .totalDistance(distance)
+                    .totalVolume(totalVolume)
+                    .totalSets(totalSets)
+                    .exerciseCount(exerciseCount)
                     .build();
         });
     }

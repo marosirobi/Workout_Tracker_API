@@ -17,6 +17,7 @@ public class WorkoutTemplateMapper {
                                 .id(te.getId())
                                 .orderIndex(te.getOrderIndex())
                                 .targetSets(te.getTargetSets())
+                                .muscleGroup(te.getExercise() == null ? null : te.getExercise().getMuscleGroup())
                                 .exerciseId(te.getExercise() == null ? null : te.getExercise().getId())
                                 .exerciseName(te.getExercise() == null ? null : te.getExercise().getExerciseName())
                                 .build()
