@@ -1,6 +1,9 @@
 package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
+import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseRecord;
+import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSessionStat;
+import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseStatsResponse;
 import com.marosirobi.workouttrackerapi.dto.stat.ExerciseMaxWeight;
 import com.marosirobi.workouttrackerapi.dto.stat.PersonalRecordResponse;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -176,7 +180,7 @@ public class StatService {
         Double maxWeight = exerciseSetRepository.findPersonalRecord(user.getId(), exercise.getId());
 
         //map to personal record response
-        //later we will need other stats so i wont make a generic mapToResponse func
+        //later we will need other stats, so I won't make a generic mapToResponse func
         return PersonalRecordResponse.builder()
                 .exerciseId(exercise.getId())
                 .maxWeight(maxWeight)
@@ -184,5 +188,46 @@ public class StatService {
                 .build();
     }
 
+    private static ExerciseRecord findRecord(List<ExerciseSessionStat> history,
+                                             Function<ExerciseSessionStat, Double> metric){
+        ExerciseSessionStat best = null;
+        double bestValue = 0;
+
+        for(ExerciseSessionStat session : history){
+            Double value = metric.apply(session);
+            if(value == null || value <= bestValue) continue;
+            best = session;
+            bestValue = value;
+        }
+
+        if(best == null) return null;
+        double rounded = Math.round(bestValue * 10) / 10.0;
+        return ExerciseRecord.builder()
+                .workoutId(best.workoutId())
+                .value(rounded)
+                .date(best.startTime())
+                .build();
+    }
+
+    public ExerciseStatsResponse getExerciseStats(Long exerciseId, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
+
+        Exercise exercise = exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exerciseId));
+
+        List<ExerciseSessionStat> history = exerciseSetRepository.findSessionStats(user.getId(), exerciseId);
+
+        return new ExerciseStatsResponse(
+                exercise.getId(),
+                exercise.getExerciseName(),
+                exercise.getMuscleGroup(),
+                findRecord(history, ExerciseSessionStat::maxWeight),
+                findRecord(history, ExerciseSessionStat::bestOneRepMax),
+                findRecord(history, ExerciseSessionStat::bestSetVolume),
+                findRecord(history, ExerciseSessionStat::bestSessionVolume),
+                history
+        );
+    }
 
 }
