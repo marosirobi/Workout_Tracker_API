@@ -5,10 +5,7 @@ import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
-import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
-import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
-import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
-import com.marosirobi.workouttrackerapi.dto.workout.WorkoutSummaryResponse;
+import com.marosirobi.workouttrackerapi.dto.workout.*;
 import com.marosirobi.workouttrackerapi.exception.IllegalArgumentException;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.exception.UnauthorizedAccessException;
@@ -183,33 +180,7 @@ public class WorkoutService {
             if (workout.getEndTime() != null) {
                 throw new IllegalArgumentException("this workout has already ended");
             }
-            workout.getExercises().clear();
-
-            for(WorkoutExerciseRequest exReq : request.exercises()){
-
-                Exercise exercise = exerciseRepository.findById(exReq.exerciseId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exReq.exerciseId()));
-
-                WorkoutExercise workoutExercise = WorkoutExercise.builder()
-                        .workout(workout)
-                        .exercise(exercise)
-                        .orderIndex(exReq.orderIndex())
-                        .build();
-
-                if(exReq.sets() != null){
-                    for(ExerciseSetRequest setReq : exReq.sets()){
-                        ExerciseSet set = ExerciseSet.builder()
-                                .workoutExercise(workoutExercise)
-                                .setNumber(setReq.setNumber())
-                                .weight(setReq.weight())
-                                .reps(setReq.reps())
-                                .build();
-
-                        workoutExercise.getSets().add(set);
-                    }
-                }
-                workout.getExercises().add(workoutExercise);
-            }
+            replaceExercises(workout,request.exercises());
         }
 
         if(request.endTime() != null){
@@ -218,6 +189,39 @@ public class WorkoutService {
 
         Workout updatedWorkout = workoutRepository.save(workout);
         return workoutMapper.mapToResponse(updatedWorkout);
+    }
+
+    @Transactional
+    public WorkoutResponse editWorkout(Long id, EditWorkoutRequest request, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
+
+        Workout workout = workoutRepository.findByIdAndUserId(id, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Workout not found " + id));
+
+        if (workout.getEndTime() == null) {
+            throw new IllegalArgumentException("Only finished workouts can be edited");
+        }
+        if (request.workoutTitle() != null && !request.workoutTitle().isBlank()) {
+            workout.setWorkoutTitle(request.workoutTitle().trim());
+        }
+        if (request.workoutNote() != null) {
+            String note = request.workoutNote().trim();
+            workout.setWorkoutNote(note.isEmpty() ? null : note);
+        }
+
+        if (request.exercises() != null) {
+            if (workout.getType() != WorkoutType.STRENGTH) {
+                throw new IllegalArgumentException("Only strength workouts have exercises");
+            }
+            if (request.exercises().isEmpty()) {
+                throw new IllegalArgumentException("A strength workout needs at least one exercise");
+            }
+            replaceExercises(workout, request.exercises());
+        }
+
+        Workout saved = workoutRepository.save(workout);
+        return workoutMapper.mapToResponse(saved);
     }
 
     @Transactional
@@ -280,5 +284,35 @@ public class WorkoutService {
         workoutRepository.save(workout);
 
         return workoutMapper.mapToResponse(workout);
+    }
+
+    private void replaceExercises(Workout workout, List<WorkoutExerciseRequest> requests){
+        workout.getExercises().clear();
+
+        for(WorkoutExerciseRequest exReq : requests){
+
+            Exercise exercise = exerciseRepository.findById(exReq.exerciseId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exReq.exerciseId()));
+
+            WorkoutExercise workoutExercise = WorkoutExercise.builder()
+                    .workout(workout)
+                    .exercise(exercise)
+                    .orderIndex(exReq.orderIndex())
+                    .build();
+
+            if(exReq.sets() != null){
+                for(ExerciseSetRequest setReq : exReq.sets()){
+                    ExerciseSet set = ExerciseSet.builder()
+                            .workoutExercise(workoutExercise)
+                            .setNumber(setReq.setNumber())
+                            .weight(setReq.weight())
+                            .reps(setReq.reps())
+                            .build();
+
+                    workoutExercise.getSets().add(set);
+                }
+            }
+            workout.getExercises().add(workoutExercise);
+        }
     }
 }

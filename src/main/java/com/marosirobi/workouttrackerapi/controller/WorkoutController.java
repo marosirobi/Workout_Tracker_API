@@ -2,10 +2,7 @@ package com.marosirobi.workouttrackerapi.controller;
 
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
-import com.marosirobi.workouttrackerapi.dto.workout.CreateWorkoutRequest;
-import com.marosirobi.workouttrackerapi.dto.workout.UpdateWorkoutRequest;
-import com.marosirobi.workouttrackerapi.dto.workout.WorkoutResponse;
-import com.marosirobi.workouttrackerapi.dto.workout.WorkoutSummaryResponse;
+import com.marosirobi.workouttrackerapi.dto.workout.*;
 import com.marosirobi.workouttrackerapi.service.WorkoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +37,13 @@ public class WorkoutController {
                                          @Valid @RequestBody UpdateWorkoutRequest request,
                                          Principal principal){
         return workoutService.updateWorkout(id, request, principal.getName());
+    }
+
+    @PutMapping("/{id}/edit")
+    public WorkoutResponse editWorkout(@PathVariable Long id,
+                                       @Valid @RequestBody EditWorkoutRequest request,
+                                       Principal principal){
+        return workoutService.editWorkout(id, request, principal.getName());
     }
 
     @GetMapping
