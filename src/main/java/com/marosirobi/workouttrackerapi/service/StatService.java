@@ -1,10 +1,11 @@
 package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
+import com.marosirobi.workouttrackerapi.domain.enums.TrackingType;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseRecord;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSessionStat;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseStatsResponse;
-import com.marosirobi.workouttrackerapi.dto.stat.ExerciseMaxWeight;
+import com.marosirobi.workouttrackerapi.dto.stat.ExerciseWorkoutBest;
 import com.marosirobi.workouttrackerapi.dto.stat.PersonalRecordResponse;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.repository.BestEffortRepository;
@@ -113,53 +114,70 @@ public class StatService {
         return segA == segB;
     }
 
-    private static boolean isBetter(ExerciseMaxWeight other, ExerciseMaxWeight current){
-        if(other.workoutId().equals(current.workoutId())) return false;
-        if(other.maxWeight() == null) return false;
-
-        int comp = Double.compare(other.maxWeight(), current.maxWeight());
-        if(comp != 0){
-            return comp > 0;
-        }
-        return other.startTime().isBefore(current.startTime());
-    }
-
     public Map<Long, Integer> computeWeightRanks(Workout workout){
         if(workout.getEndTime() == null || workout.getExercises() == null || workout.getExercises().isEmpty()){
             return Map.of();
         }
 
-        Set<Long> exerciseIds = workout.getExercises().stream()
-                .map(we -> we.getExercise().getId())
-                .collect(Collectors.toSet());
+        Map<Long, TrackingType> typeByExercise = workout.getExercises().stream()
+                .collect(Collectors.toMap(
+                        we -> we.getExercise().getId(),
+                        we -> we.getExercise().effectiveTrackingType(),
+                        (first, second) -> first));
 
-        List<ExerciseMaxWeight> rows = exerciseSetRepository.findMaxWeightPerWorkout(workout.getUser().getId(), exerciseIds);
+        List<ExerciseWorkoutBest> rows = exerciseSetRepository
+                .findBestPerWorkout(workout.getUser().getId(), typeByExercise.keySet());
 
-        Map<Long, List<ExerciseMaxWeight>> historyByExercise = rows.stream()
-                .collect(Collectors.groupingBy(ExerciseMaxWeight::exerciseId));
+        Map<Long, List<ExerciseWorkoutBest>> historyByExercise = rows.stream()
+                .collect(Collectors.groupingBy(ExerciseWorkoutBest::exerciseId));
 
         Map<Long, Integer> ranks = new HashMap<>();
 
         historyByExercise.forEach((exerciseId, history) -> {
-            ExerciseMaxWeight current = history.stream()
+            ExerciseWorkoutBest current = history.stream()
                     .filter(row -> row.workoutId().equals(workout.getId()))
                     .findFirst()
                     .orElse(null);
-
             if (current == null) return;
-            if (current.maxWeight() == null || current.maxWeight() <= 0) return;
 
-            boolean hasEarlierWorkout = history.stream()
-                    .anyMatch(row -> row.startTime().isBefore(current.startTime()));
-            //if (!hasEarlierWorkout) return;
+            Function<ExerciseWorkoutBest, Double> metric = rankMetric(typeByExercise.get(exerciseId));
+            Double currentValue = metric.apply(current);
+            if (currentValue == null || currentValue <= 0) return;
 
             long betterCount = history.stream()
-                    .filter(row -> isBetter(row, current)).count();
+                    .filter(row -> isBetter(row, current, metric))
+                    .count();
 
             ranks.put(exerciseId, (int) betterCount + 1);
         });
 
         return ranks;
+    }
+
+    private static Function<ExerciseWorkoutBest, Double> rankMetric(TrackingType type) {
+        return switch (type) {
+            case WEIGHT_REPS, WEIGHTED_BODYWEIGHT -> ExerciseWorkoutBest::maxWeight;
+            case BODYWEIGHT -> row -> asDouble(row.maxReps());
+            case DURATION -> row -> asDouble(row.maxDurationSeconds());
+        };
+    }
+
+    private static boolean isBetter(ExerciseWorkoutBest other, ExerciseWorkoutBest current,
+                                    Function<ExerciseWorkoutBest, Double> metric) {
+        if (other.workoutId().equals(current.workoutId())) return false;
+
+        Double otherValue = metric.apply(other);
+        if (otherValue == null) return false;
+
+        int comparison = Double.compare(otherValue, metric.apply(current));
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+        return other.startTime().isBefore(current.startTime());
+    }
+
+    private static Double asDouble(Integer value) {
+        return value != null ? value.doubleValue() : null;
     }
 
     @Transactional
@@ -216,16 +234,25 @@ public class StatService {
         Exercise exercise = exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exerciseId));
 
-        List<ExerciseSessionStat> history = exerciseSetRepository.findSessionStats(user.getId(), exerciseId);
+        TrackingType type = exercise.effectiveTrackingType();
+        boolean usesBodyWeight = type == TrackingType.BODYWEIGHT || type == TrackingType.WEIGHTED_BODYWEIGHT;
+        boolean hasWeight = type == TrackingType.WEIGHT_REPS || type == TrackingType.WEIGHTED_BODYWEIGHT;
+        boolean hasReps = type != TrackingType.DURATION;
+
+        List<ExerciseSessionStat> history = exerciseSetRepository
+                .findSessionStats(user.getId(), exerciseId, usesBodyWeight ? 1.0 : 0.0);
 
         return new ExerciseStatsResponse(
                 exercise.getId(),
                 exercise.getExerciseName(),
                 exercise.getMuscleGroup(),
-                findRecord(history, ExerciseSessionStat::maxWeight),
-                findRecord(history, ExerciseSessionStat::bestOneRepMax),
-                findRecord(history, ExerciseSessionStat::bestSetVolume),
-                findRecord(history, ExerciseSessionStat::bestSessionVolume),
+                type,
+                hasWeight ? findRecord(history, ExerciseSessionStat::maxWeight) : null,
+                type == TrackingType.WEIGHT_REPS ? findRecord(history, ExerciseSessionStat::bestOneRepMax) : null,
+                hasReps ? findRecord(history, ExerciseSessionStat::bestSetVolume) : null,
+                hasReps ? findRecord(history, ExerciseSessionStat::bestSessionVolume) : null,
+                usesBodyWeight ? findRecord(history, s -> asDouble(s.maxReps())) : null,
+                type == TrackingType.DURATION ? findRecord(history, s -> asDouble(s.maxDurationSeconds())) : null,
                 history
         );
     }

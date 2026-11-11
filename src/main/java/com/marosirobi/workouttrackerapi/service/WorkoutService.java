@@ -1,6 +1,7 @@
 package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.*;
+import com.marosirobi.workouttrackerapi.domain.enums.TrackingType;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
@@ -11,6 +12,7 @@ import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.exception.UnauthorizedAccessException;
 import com.marosirobi.workouttrackerapi.mapper.WorkoutMapper;
 import com.marosirobi.workouttrackerapi.repository.*;
+import com.marosirobi.workouttrackerapi.utils.VolumeCalculator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,6 +45,10 @@ public class WorkoutService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
+
+        if (user.getBodyWeightKg() == null) {
+            throw new IllegalArgumentException("Body weight is required before starting a workout");
+        }
 
         WorkoutTemplate template = null;
         if(request.templateId() != null) {
@@ -146,9 +152,14 @@ public class WorkoutService {
                 exerciseCount = workout.getExercises().size();
                 totalSets = workout.getExercises().stream()
                         .mapToInt(we -> we.getSets().size()).sum();
+                Double bodyWeight = workout.getBodyWeightKg();
                 totalVolume = workout.getExercises().stream()
-                        .flatMap(we -> we.getSets().stream())
-                        .mapToDouble(set -> set.getWeight() * set.getReps())
+                        .mapToDouble(we -> {
+                            TrackingType trackingType = we.getExercise().effectiveTrackingType();
+                            return we.getSets().stream()
+                                    .mapToDouble(set -> VolumeCalculator.setVolume(trackingType, set, bodyWeight))
+                                    .sum();
+                        })
                         .sum();
             }
 
@@ -323,18 +334,41 @@ public class WorkoutService {
                     .build();
 
             if(exReq.sets() != null){
-                for(ExerciseSetRequest setReq : exReq.sets()){
-                    ExerciseSet set = ExerciseSet.builder()
-                            .workoutExercise(workoutExercise)
-                            .setNumber(setReq.setNumber())
-                            .weight(setReq.weight())
-                            .reps(setReq.reps())
-                            .build();
+                TrackingType type = exercise.effectiveTrackingType();
 
+                for(ExerciseSetRequest setReq : exReq.sets()){
+                    ExerciseSet set = buildSet(workoutExercise, setReq, type);
                     workoutExercise.getSets().add(set);
                 }
             }
             workout.getExercises().add(workoutExercise);
         }
+    }
+
+    private ExerciseSet buildSet(WorkoutExercise workoutExercise, ExerciseSetRequest setReq, TrackingType type) {
+        ExerciseSet.ExerciseSetBuilder builder = ExerciseSet.builder()
+                .workoutExercise(workoutExercise)
+                .setNumber(setReq.setNumber());
+
+        return switch (type) {
+            case WEIGHT_REPS, WEIGHTED_BODYWEIGHT -> builder
+                    .weight(setReq.weight())
+                    .reps(setReq.reps())
+                    .build();
+            case BODYWEIGHT -> builder
+                    .weight(0.0)
+                    .reps(setReq.reps())
+                    .build();
+            case DURATION -> {
+                if (setReq.durationSeconds() == null) {
+                    throw new IllegalArgumentException("Duration is required for timed exercises");
+                }
+                yield builder
+                        .weight(0.0)
+                        .reps(0)
+                        .durationSeconds(setReq.durationSeconds())
+                        .build();
+            }
+        };
     }
 }

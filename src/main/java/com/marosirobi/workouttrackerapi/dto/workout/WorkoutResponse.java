@@ -34,6 +34,7 @@ public record WorkoutResponse(Long id,
                               WorkoutType type,
                               Instant startTime,
                               Instant endTime,
+                              Double bodyWeightKg,
                               //STRENGTH
                               List<WorkoutExerciseResponse> exercises,
                               //CARDIO

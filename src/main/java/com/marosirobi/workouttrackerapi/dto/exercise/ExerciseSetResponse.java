@@ -7,4 +7,5 @@ import lombok.Data;
 public record ExerciseSetResponse (Long id,
                                    Integer setNumber,
                                    Integer reps,
+                                   Integer durationSeconds,
                                    Double weight) { }

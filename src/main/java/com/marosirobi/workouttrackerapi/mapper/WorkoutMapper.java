@@ -32,7 +32,8 @@ public class WorkoutMapper {
                 .workoutNote(workout.getWorkoutNote())
                 .startTime(workout.getStartTime())
                 .endTime(workout.getEndTime())
-                .type(workout.getType());
+                .type(workout.getType())
+                .bodyWeightKg(workout.getBodyWeightKg());
 
         if(workout.getType() == WorkoutType.STRENGTH){
             if(workout.getTemplate() != null){
@@ -52,6 +53,7 @@ public class WorkoutMapper {
                                 weResponseBuilder
                                         .exerciseId(we.getExercise().getId())
                                         .muscleGroup(we.getExercise().getMuscleGroup())
+                                        .trackingType(we.getExercise().effectiveTrackingType())
                                         .weightRank(weightRanks.get(we.getExercise().getId()))
                                         .exerciseName(we.getExercise().getExerciseName());
                             }
@@ -63,7 +65,9 @@ public class WorkoutMapper {
                                                 .id(set.getId())
                                                 .setNumber(set.getSetNumber())
                                                 .reps(set.getReps())
-                                                .weight(set.getWeight()).build()
+                                                .weight(set.getWeight())
+                                                .durationSeconds(set.getDurationSeconds())
+                                                .build()
                                         ).toList();
                                 weResponseBuilder.sets(setResponses);
                             }

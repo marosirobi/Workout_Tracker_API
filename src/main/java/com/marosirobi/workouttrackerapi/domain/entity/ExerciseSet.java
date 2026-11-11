@@ -25,6 +25,9 @@ public class ExerciseSet {
     @Column(nullable = false)
     private Integer reps;
 
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_exercise_id", nullable = false)
     private WorkoutExercise workoutExercise;

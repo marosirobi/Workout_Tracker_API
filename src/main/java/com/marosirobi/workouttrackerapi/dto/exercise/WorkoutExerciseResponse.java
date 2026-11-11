@@ -1,6 +1,7 @@
 package com.marosirobi.workouttrackerapi.dto.exercise;
 
 import com.marosirobi.workouttrackerapi.domain.enums.MuscleGroup;
+import com.marosirobi.workouttrackerapi.domain.enums.TrackingType;
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,4 +14,5 @@ public record WorkoutExerciseResponse (Long id,
                                        Integer orderIndex,
                                        Integer weightRank,
                                        MuscleGroup muscleGroup,
+                                       TrackingType trackingType,
                                        List<ExerciseSetResponse> sets) { }

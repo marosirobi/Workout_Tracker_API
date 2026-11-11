@@ -7,10 +7,13 @@ import com.marosirobi.workouttrackerapi.service.WorkoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/workouts")
@@ -52,6 +55,14 @@ public class WorkoutController {
                                                         @RequestParam(required = false)WorkoutType type,
                                                         @RequestParam(defaultValue = "0") int page){
         return workoutService.getUserWorkouts(principal.getName(), page, size, type);
+    }
+
+    @GetMapping("/range")
+    public List<ActivityWorkoutResponse> getWorkoutsInRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            Principal principal) {
+        return workoutService.getWorkoutsInRange(from, to, principal.getName());
     }
 
     @GetMapping("/{id}")
