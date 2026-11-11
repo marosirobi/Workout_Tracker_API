@@ -8,5 +8,5 @@ import lombok.Builder;
 @Builder
 public record TemplateExerciseRequest(@NotNull Long exerciseId,
                                       @NotNull Integer orderIndex,
-                                      @Min(1) @Max(20) Integer targetSets) {
+                                      @NotNull @Min(1) @Max(20) Integer targetSets) {
 }

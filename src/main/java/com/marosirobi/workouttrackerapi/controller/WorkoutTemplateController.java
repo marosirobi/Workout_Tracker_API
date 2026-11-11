@@ -1,8 +1,6 @@
 package com.marosirobi.workouttrackerapi.controller;
 
-import com.marosirobi.workouttrackerapi.dto.template.CreateWorkoutTemplateRequest;
-import com.marosirobi.workouttrackerapi.dto.template.UpdateTemplateExerciseRequest;
-import com.marosirobi.workouttrackerapi.dto.template.UpdateWorkoutTemplateRequest;
+import com.marosirobi.workouttrackerapi.dto.template.WorkoutTemplateRequest;
 import com.marosirobi.workouttrackerapi.dto.template.WorkoutTemplateResponse;
 import com.marosirobi.workouttrackerapi.service.WorkoutTemplateService;
 import jakarta.validation.Valid;
@@ -22,14 +20,14 @@ public class WorkoutTemplateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutTemplateResponse createTemplate(@RequestBody @Valid CreateWorkoutTemplateRequest request,
+    public WorkoutTemplateResponse createTemplate(@RequestBody @Valid WorkoutTemplateRequest request,
                                                   Principal principal){
         return workoutTemplateService.createTemplate(request, principal.getName());
     }
 
     @PutMapping("/{id}")
     public WorkoutTemplateResponse updateTemplate(@PathVariable Long id,
-                                                  @Valid @RequestBody UpdateWorkoutTemplateRequest request,
+                                                  @Valid @RequestBody WorkoutTemplateRequest request,
                                                   Principal principal){
         return workoutTemplateService.updateTemplate(id, request, principal.getName());
     }

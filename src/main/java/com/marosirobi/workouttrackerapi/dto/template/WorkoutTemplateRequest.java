@@ -8,6 +8,6 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record CreateWorkoutTemplateRequest(@NotBlank @Size(max=100) String templateName,
-                                           @Valid List<TemplateExerciseRequest> exercises) {
+public record WorkoutTemplateRequest(@NotBlank @Size(max=100) String templateName,
+                                     @Valid List<TemplateExerciseRequest> exercises) {
 }
