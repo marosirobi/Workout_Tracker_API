@@ -92,6 +92,8 @@ public class UserService {
             credentialsChanged = true;
         }
 
+        user.setBodyWeightKg(request.bodyWeightKg());
+
         User updatedUser = userRepository.save(user);
 
         String newAccessToken = credentialsChanged ? jwtService.generateToken(user.getEmail(), user.getId()) : null;

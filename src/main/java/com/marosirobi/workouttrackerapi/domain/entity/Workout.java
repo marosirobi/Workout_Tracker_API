@@ -47,6 +47,9 @@ public class Workout {
     @JoinColumn(name = "template_id")
     private WorkoutTemplate template;
 
+    @Column(name = "body_weight_kg")
+    private Double bodyWeightKg;
+
     @Builder.Default
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")

@@ -10,5 +10,6 @@ import java.time.LocalDateTime;
 public record UserResponse (Long id,
                             String username,
                             String email,
+                            Double bodyWeightKg,
                             Instant createdAt,
                             String accessToken) { }

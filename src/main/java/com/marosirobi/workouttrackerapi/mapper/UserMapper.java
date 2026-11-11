@@ -12,6 +12,7 @@ public class UserMapper {
                 .id(user.getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
+                .bodyWeightKg(user.getBodyWeightKg())
                 .accessToken(accessToken)
                 .createdAt(user.getCreatedAt())
                 .build();

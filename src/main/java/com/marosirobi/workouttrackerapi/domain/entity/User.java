@@ -38,6 +38,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
+    @Column(name = "body_weight_kg")
+    private Double bodyWeightKg;
+
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     private Instant createdAt;

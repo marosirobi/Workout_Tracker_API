@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -34,6 +35,8 @@ public class WorkoutService {
     private final CardioStatsRepository cardioStatsRepository;
     private final StatService statService;
     private final WorkoutMapper workoutMapper;
+
+    private static final Duration MAX_ACTIVITY_RANGE = Duration.ofDays(400);
 
     @Transactional
     public WorkoutResponse createWorkout(CreateWorkoutRequest request, String email){
@@ -54,6 +57,7 @@ public class WorkoutService {
                 .type(request.type())
                 .startTime(request.startTime())
                 .template(template)
+                .bodyWeightKg(user.getBodyWeightKg())
                 .build();
 
             if(template != null && template.getExercises() != null){
@@ -93,6 +97,24 @@ public class WorkoutService {
             throw new ResourceNotFoundException("Workout doesn't exist or you don't have permission: " + id);
         }
         workoutRepository.deleteById(id);
+    }
+
+    public List<ActivityWorkoutResponse> getWorkoutsInRange(Instant from, Instant to, String email) {
+        if (!from.isBefore(to)) {
+            throw new IllegalArgumentException("'from' must be before 'to'");
+        }
+        if (Duration.between(from, to).compareTo(MAX_ACTIVITY_RANGE) > 0) {
+            throw new IllegalArgumentException("The requested range is too long");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
+
+        return workoutRepository
+                .findByUserIdAndEndTimeIsNotNullAndStartTimeBetweenOrderByStartTimeAsc(user.getId(), from, to)
+                .stream()
+                .map(w -> new ActivityWorkoutResponse(w.getId(), w.getType(), w.getStartTime()))
+                .toList();
     }
 
     @Transactional
