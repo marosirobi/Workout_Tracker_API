@@ -5,13 +5,14 @@ import com.marosirobi.workouttrackerapi.domain.entity.User;
 import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
 import com.marosirobi.workouttrackerapi.dto.auth.LoginRequest;
 import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
+import com.marosirobi.workouttrackerapi.dto.user.ChangePasswordRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
+import com.marosirobi.workouttrackerapi.exception.BadRequestException;
 import com.marosirobi.workouttrackerapi.exception.DuplicateResourceException;
 import com.marosirobi.workouttrackerapi.exception.InvalidCredentialsException;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
-import com.marosirobi.workouttrackerapi.exception.TokenRefreshException;
 import com.marosirobi.workouttrackerapi.mapper.UserMapper;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -19,8 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +33,7 @@ public class UserService {
     private final UserMapper userMapper;
 
     public AuthResponse login(LoginRequest request){
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(request.email().trim())
                 .orElseThrow(() -> new InvalidCredentialsException("Wrong email or password!"));
 
         if(!passwordEncoder.matches(request.password(), user.getPassword())){
@@ -41,7 +41,7 @@ public class UserService {
         }
 
         String accessToken = jwtService.generateToken(user.getEmail(), user.getId());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
         return AuthResponse.builder()
                 .token(accessToken)
@@ -53,13 +53,20 @@ public class UserService {
     @Transactional
     public UserResponse createUser(CreateUserRequest request){
 
-        if(userRepository.findByEmail(request.email()).isPresent()){
-            throw new DuplicateResourceException("This email adress is already taken.");
+        String username = request.username().trim();
+        String email = normalizeEmail(request.email());
+
+        if(userRepository.existsByEmailIgnoreCase(email)){
+            throw new DuplicateResourceException("This email address is already taken.", "EMAIL_TAKEN");
+        }
+
+        if(userRepository.existsByUsernameIgnoreCase(username)){
+            throw new DuplicateResourceException("This username is already taken.", "USERNAME_TAKEN");
         }
 
         User newUser = User.builder()
-                .username(request.username())
-                .email(request.email())
+                .username(username)
+                .email(email)
                 .password(passwordEncoder.encode(request.password()))
                 .build();
 
@@ -74,21 +81,23 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
+        String newUsername = request.username().trim();
+        String newEmail = normalizeEmail(request.email());
         boolean credentialsChanged = false;
 
-        if(!user.getEmail().equals(request.email())){
-            if(userRepository.findByEmail(request.email()).isPresent())
-                throw new DuplicateResourceException("This email is already taken.");
+        if(!user.getEmail().equals(newEmail)){
+            if(!user.getEmail().equalsIgnoreCase(newEmail) && userRepository.existsByEmailIgnoreCase(newEmail))
+                throw new DuplicateResourceException("This email is already taken.", "EMAIL_TAKEN");
 
-            user.setEmail(request.email());
+            user.setEmail(newEmail);
             credentialsChanged = true;
         }
 
-        if(!user.getUsername().equals(request.username())){
-            if(userRepository.findByUsername(request.username()).isPresent())
-                throw new DuplicateResourceException("This username is already taken.");
+        if(!user.getUsername().equals(newUsername)){
+            if(!user.getUsername().equalsIgnoreCase(newUsername) && userRepository.existsByUsernameIgnoreCase(newUsername))
+                throw new DuplicateResourceException("This username is already taken.", "USERNAME_TAKEN");
 
-            user.setUsername(request.username());
+            user.setUsername(newUsername);
             credentialsChanged = true;
         }
 
@@ -116,26 +125,50 @@ public class UserService {
         return userMapper.mapToResponse(user);
     }
 
-    public List<UserResponse> getAllUsers(){
-        return userRepository.findAll()
-                .stream()
-                .map(userMapper::mapToResponse)
-                .collect(Collectors.toList());
+    public AuthResponse refreshToken(RefreshTokenRequest request){
+        RefreshToken newRefreshToken = refreshTokenService.rotate(request.refreshToken());
+        User user = newRefreshToken.getUser();
+
+        String newAccessToken = jwtService.generateToken(user.getEmail(), user.getId());
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken.getToken())
+                .user(userMapper.mapToResponse(user))
+                .build();
     }
 
-    public AuthResponse refreshToken(RefreshTokenRequest request){
-        return refreshTokenService.findByToken(request.refreshToken())
-                .map(refreshTokenService::verifyExpiration)
-                .map(RefreshToken::getUser)
-                .map(user -> {
-                    String newAccessToken = jwtService.generateToken(user.getEmail(), user.getId());
+    public void logout(RefreshTokenRequest request){
+        refreshTokenService.deleteByToken(request.refreshToken());
+    }
 
-                    return AuthResponse.builder()
-                            .token(newAccessToken)
-                            .refreshToken(request.refreshToken())
-                            .user(userMapper.mapToResponse(user))
-                            .build();
-                })
-                .orElseThrow(() -> new TokenRefreshException("Invalid Refresh Token"));
+    @Transactional
+    public AuthResponse changePassword(String email, ChangePasswordRequest request){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
+
+        if(!passwordEncoder.matches(request.currentPassword(), user.getPassword())){
+            throw new BadRequestException("Current password is incorrect.", "WRONG_CURRENT_PASSWORD");
+        }
+
+        if(passwordEncoder.matches(request.newPassword(), user.getPassword())){
+            throw new BadRequestException("New password must differ from the current one.", "SAME_PASSWORD");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+
+        refreshTokenService.deleteAllForUser(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        String accessToken = jwtService.generateToken(user.getEmail(), user.getId());
+
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .user(userMapper.mapToResponse(user))
+                .build();
+    }
+
+    private static String normalizeEmail(String email){
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -1,7 +1,6 @@
 package com.marosirobi.workouttrackerapi.dto.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,6 +16,7 @@ public class ApiError {
     private Integer status;
     private String error;
     private String message;
+    private String code;
     private String path;
     private Map<String, List<String>> validationErrors;
 }

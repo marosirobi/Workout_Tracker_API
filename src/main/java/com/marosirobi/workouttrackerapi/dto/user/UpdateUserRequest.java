@@ -2,7 +2,6 @@ package com.marosirobi.workouttrackerapi.dto.user;
 
 import jakarta.validation.constraints.*;
 import lombok.Builder;
-import lombok.Data;
 
 @Builder
 public record UpdateUserRequest (@NotBlank @Size(min = 3, max = 20) String username,

@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Builder
 public record TrackPointResponse(@NotNull Double latitude,

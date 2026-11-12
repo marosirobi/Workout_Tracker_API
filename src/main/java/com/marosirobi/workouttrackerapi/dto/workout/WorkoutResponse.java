@@ -6,13 +6,9 @@ import com.marosirobi.workouttrackerapi.dto.cardio.CardioStatsResponse;
 import com.marosirobi.workouttrackerapi.dto.cardio.TrackPointResponse;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseResponse;
 import com.marosirobi.workouttrackerapi.dto.stat.BestEffortResponse;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @JsonPropertyOrder({

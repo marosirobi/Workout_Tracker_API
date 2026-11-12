@@ -4,7 +4,6 @@ import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import lombok.Builder;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Builder
 public record WorkoutSummaryResponse(Long id,

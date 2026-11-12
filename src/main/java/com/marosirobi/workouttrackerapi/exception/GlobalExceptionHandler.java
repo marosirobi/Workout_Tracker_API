@@ -1,10 +1,13 @@
 package com.marosirobi.workouttrackerapi.exception;
 
 import com.marosirobi.workouttrackerapi.dto.exception.ApiError;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -28,6 +32,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiError> handleDuplicateResourceException(DuplicateResourceException ex, WebRequest request) {
         ApiError apiError = buildApiError(HttpStatus.CONFLICT, ex.getMessage(), request);
+        apiError.setCode(ex.getCode());
         return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
     }
 
@@ -64,17 +69,35 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiError> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequestException(BadRequestException ex, WebRequest request) {
         ApiError apiError = buildApiError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        apiError.setCode(ex.getCode());
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest request) {
+        log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        ApiError apiError = buildApiError(HttpStatus.CONFLICT, "The request conflicts with existing data.", request);
+        return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableMessage(HttpMessageNotReadableException ex, WebRequest request) {
+        ApiError apiError = buildApiError(HttpStatus.BAD_REQUEST, "Malformed request body.", request);
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGlobalExceptions(Exception ex, WebRequest request) {
-        ex.printStackTrace();
+        if (ex instanceof ErrorResponse errorResponse) {
+            HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+            return new ResponseEntity<>(buildApiError(status, status.getReasonPhrase(), request), status);
+        }
 
-        ApiError apiError = buildApiError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+        log.error("Unexpected error", ex);
+        ApiError apiError = buildApiError(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.", request);
         return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

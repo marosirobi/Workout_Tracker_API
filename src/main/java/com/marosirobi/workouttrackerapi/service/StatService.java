@@ -6,7 +6,6 @@ import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseRecord;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSessionStat;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseStatsResponse;
 import com.marosirobi.workouttrackerapi.dto.stat.ExerciseWorkoutBest;
-import com.marosirobi.workouttrackerapi.dto.stat.PersonalRecordResponse;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.repository.BestEffortRepository;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
@@ -185,25 +184,6 @@ public class StatService {
         List<BestEffort> efforts = calculate(workout,points);
         bestEffortRepository.saveAll(efforts);
         workout.getBestEfforts().addAll(efforts);
-    }
-
-    public PersonalRecordResponse getPersonalRecord(Long exerciseId, String email){
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
-
-        Exercise exercise = exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Exercise not found " + exerciseId));
-
-        Double maxWeight = exerciseSetRepository.findPersonalRecord(user.getId(), exercise.getId());
-
-        //map to personal record response
-        //later we will need other stats, so I won't make a generic mapToResponse func
-        return PersonalRecordResponse.builder()
-                .exerciseId(exercise.getId())
-                .maxWeight(maxWeight)
-                .exerciseName(exercise.getExerciseName())
-                .build();
     }
 
     private static ExerciseRecord findRecord(List<ExerciseSessionStat> history,

@@ -1,7 +1,12 @@
 package com.marosirobi.workouttrackerapi.service;
 
-import com.marosirobi.workouttrackerapi.domain.entity.*;
-import com.marosirobi.workouttrackerapi.dto.template.*;
+import com.marosirobi.workouttrackerapi.domain.entity.Exercise;
+import com.marosirobi.workouttrackerapi.domain.entity.TemplateExercise;
+import com.marosirobi.workouttrackerapi.domain.entity.User;
+import com.marosirobi.workouttrackerapi.domain.entity.WorkoutTemplate;
+import com.marosirobi.workouttrackerapi.dto.template.TemplateExerciseRequest;
+import com.marosirobi.workouttrackerapi.dto.template.WorkoutTemplateRequest;
+import com.marosirobi.workouttrackerapi.dto.template.WorkoutTemplateResponse;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.mapper.WorkoutTemplateMapper;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;

@@ -7,7 +7,7 @@ import com.marosirobi.workouttrackerapi.dto.cardio.CardioDataRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.ExerciseSetRequest;
 import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
 import com.marosirobi.workouttrackerapi.dto.workout.*;
-import com.marosirobi.workouttrackerapi.exception.IllegalArgumentException;
+import com.marosirobi.workouttrackerapi.exception.BadRequestException;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.exception.UnauthorizedAccessException;
 import com.marosirobi.workouttrackerapi.mapper.WorkoutMapper;
@@ -47,13 +47,13 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         if (user.getBodyWeightKg() == null) {
-            throw new IllegalArgumentException("Body weight is required before starting a workout");
+            throw new BadRequestException("Body weight is required before starting a workout");
         }
 
         WorkoutTemplate template = null;
         if(request.templateId() != null) {
             if (request.type() != WorkoutType.STRENGTH)
-                throw new IllegalArgumentException("Templates can only be used for strength workouts");
+                throw new BadRequestException("Templates can only be used for strength workouts");
 
             template = workoutTemplateRepository.findByIdAndUserId(request.templateId(), user.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Workout template not found " + request.templateId()));
@@ -107,10 +107,10 @@ public class WorkoutService {
 
     public List<ActivityWorkoutResponse> getWorkoutsInRange(Instant from, Instant to, String email) {
         if (!from.isBefore(to)) {
-            throw new IllegalArgumentException("'from' must be before 'to'");
+            throw new BadRequestException("'from' must be before 'to'");
         }
         if (Duration.between(from, to).compareTo(MAX_ACTIVITY_RANGE) > 0) {
-            throw new IllegalArgumentException("The requested range is too long");
+            throw new BadRequestException("The requested range is too long");
         }
 
         User user = userRepository.findByEmail(email)
@@ -211,7 +211,7 @@ public class WorkoutService {
 
         if(request.exercises() != null){
             if (workout.getEndTime() != null) {
-                throw new IllegalArgumentException("this workout has already ended");
+                throw new BadRequestException("this workout has already ended");
             }
             replaceExercises(workout,request.exercises());
         }
@@ -233,7 +233,7 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("Workout not found " + id));
 
         if (workout.getEndTime() == null) {
-            throw new IllegalArgumentException("Only finished workouts can be edited");
+            throw new BadRequestException("Only finished workouts can be edited");
         }
         if (request.workoutTitle() != null && !request.workoutTitle().isBlank()) {
             workout.setWorkoutTitle(request.workoutTitle().trim());
@@ -245,10 +245,10 @@ public class WorkoutService {
 
         if (request.exercises() != null) {
             if (workout.getType() != WorkoutType.STRENGTH) {
-                throw new IllegalArgumentException("Only strength workouts have exercises");
+                throw new BadRequestException("Only strength workouts have exercises");
             }
             if (request.exercises().isEmpty()) {
-                throw new IllegalArgumentException("A strength workout needs at least one exercise");
+                throw new BadRequestException("A strength workout needs at least one exercise");
             }
             replaceExercises(workout, request.exercises());
         }
@@ -270,11 +270,11 @@ public class WorkoutService {
         }
 
         if(!(workout.getType() == WorkoutType.CARDIO)){
-            throw new IllegalArgumentException("Invalid workout type " + workout.getType());
+            throw new BadRequestException("Invalid workout type " + workout.getType());
         }
 
         if (workout.getEndTime() != null) {
-            throw new IllegalArgumentException("This workout has already ended");
+            throw new BadRequestException("This workout has already ended");
         }
 
         CardioStats stats = CardioStats.builder()
@@ -361,7 +361,7 @@ public class WorkoutService {
                     .build();
             case DURATION -> {
                 if (setReq.durationSeconds() == null) {
-                    throw new IllegalArgumentException("Duration is required for timed exercises");
+                    throw new BadRequestException("Duration is required for timed exercises");
                 }
                 yield builder
                         .weight(0.0)

@@ -3,10 +3,8 @@ package com.marosirobi.workouttrackerapi.domain.entity;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.core.annotation.Order;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 

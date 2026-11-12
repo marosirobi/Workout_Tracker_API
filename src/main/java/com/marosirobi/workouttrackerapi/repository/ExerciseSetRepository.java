@@ -14,12 +14,6 @@ import java.util.List;
 @Repository
 public interface ExerciseSetRepository extends JpaRepository<ExerciseSet, Long> {
 
-    @Query("SELECT MAX(s.weight) FROM ExerciseSet s " +
-            "JOIN s.workoutExercise we " +
-            "JOIN we.workout w " +
-            "WHERE w.user.id = :userId AND we.exercise.id = :exerciseId")
-    Double findPersonalRecord(@Param("userId") Long userId, @Param("exerciseId") Long exerciseId);
-
     @Query("SELECT new com.marosirobi.workouttrackerapi.dto.stat.ExerciseWorkoutBest(" +
             "we.exercise.id, w.id, w.startTime, " +
             "CAST(MAX(s.weight) AS DOUBLE), " +

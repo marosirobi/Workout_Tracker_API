@@ -1,5 +1,7 @@
 package com.marosirobi.workouttrackerapi.controller;
 
+import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
+import com.marosirobi.workouttrackerapi.dto.user.ChangePasswordRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
 import com.marosirobi.workouttrackerapi.service.UserService;
@@ -21,6 +23,12 @@ public class UserController {
     public UserResponse updateMyAccount(Principal principal,
                                         @Valid @RequestBody UpdateUserRequest request){
         return userService.updateUser(principal.getName(), request);
+    }
+
+    @PutMapping("/me/password")
+    public AuthResponse changeMyPassword(Principal principal,
+                                         @Valid @RequestBody ChangePasswordRequest request){
+        return userService.changePassword(principal.getName(), request);
     }
 
     @DeleteMapping("/me")

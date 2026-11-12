@@ -3,7 +3,6 @@ package com.marosirobi.workouttrackerapi.dto.exercise;
 import com.marosirobi.workouttrackerapi.domain.enums.MuscleGroup;
 import com.marosirobi.workouttrackerapi.domain.enums.TrackingType;
 import lombok.Builder;
-import lombok.Data;
 
 import java.util.List;
 

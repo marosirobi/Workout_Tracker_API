@@ -2,16 +2,15 @@ package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.RefreshToken;
 import com.marosirobi.workouttrackerapi.domain.entity.User;
-import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.exception.TokenRefreshException;
 import com.marosirobi.workouttrackerapi.repository.RefreshTokenRepository;
-import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -19,33 +18,49 @@ import java.util.UUID;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserRepository userRepository;
+
+    @Value("${app.jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
 
     @Transactional
-    public RefreshToken createRefreshToken(Long userId){
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found " +userId));
-
-        RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
-                .orElse(RefreshToken.builder()
-                        .user(user)
-                        .token(UUID.randomUUID().toString())
-                        .expiryDate(Instant.now().plusMillis(604800000L))
-                        .build()
-                );
+    public RefreshToken createRefreshToken(User user){
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(UUID.randomUUID().toString())
+                .expiryDate(Instant.now().plusMillis(refreshExpirationMs))
+                .build();
 
         return refreshTokenRepository.save(refreshToken);
     }
 
-    public RefreshToken verifyExpiration(RefreshToken refreshToken){
-        if(refreshToken.getExpiryDate().compareTo(Instant.now()) < 0){
-            refreshTokenRepository.delete(refreshToken);
-            throw new TokenRefreshException("Refresh Token is invalid");
+    @Transactional(dontRollbackOn = TokenRefreshException.class)
+    public RefreshToken rotate(String oldToken){
+        RefreshToken existing = refreshTokenRepository.findByToken(oldToken)
+                .orElseThrow(() -> new TokenRefreshException("Invalid refresh token"));
+
+        refreshTokenRepository.delete(existing);
+
+        if(existing.getExpiryDate().isBefore(Instant.now())){
+            throw new TokenRefreshException("Refresh token expired");
         }
-        return refreshToken;
+
+        return createRefreshToken(existing.getUser());
     }
 
-    public Optional<RefreshToken> findByToken(String token){
-        return refreshTokenRepository.findByToken(token);
+    @Transactional
+    public void deleteByToken(String token){
+        refreshTokenRepository.findByToken(token)
+                .ifPresent(refreshTokenRepository::delete);
+    }
+
+    @Transactional
+    public void deleteAllForUser(User user){
+        refreshTokenRepository.deleteAllByUser(user);
+    }
+
+    @Scheduled(cron = "0 0 3 * * *")
+    @Transactional
+    public void deleteExpiredTokens(){
+        refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
     }
 }

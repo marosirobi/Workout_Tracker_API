@@ -4,10 +4,8 @@ import com.marosirobi.workouttrackerapi.dto.exercise.WorkoutExerciseRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
-import lombok.Data;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Builder
