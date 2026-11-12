@@ -15,6 +15,7 @@ import com.marosirobi.workouttrackerapi.repository.*;
 import com.marosirobi.workouttrackerapi.utils.VolumeCalculator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkoutService {
@@ -90,6 +92,8 @@ public class WorkoutService {
             }
 
         Workout savedWorkout = workoutRepository.save(workout);
+        log.info("Workout started, workout={}, type={}, user={}",
+                savedWorkout.getId(), savedWorkout.getType(), user.getId());
 
         return workoutMapper.mapToResponse(savedWorkout);
     }
@@ -103,6 +107,7 @@ public class WorkoutService {
             throw new ResourceNotFoundException("Workout doesn't exist or you don't have permission: " + id);
         }
         workoutRepository.deleteById(id);
+        log.info("Workout deleted, workout={}, user={}", id, user.getId());
     }
 
     public List<ActivityWorkoutResponse> getWorkoutsInRange(Instant from, Instant to, String email) {
@@ -221,6 +226,11 @@ public class WorkoutService {
         }
 
         Workout updatedWorkout = workoutRepository.save(workout);
+        if (request.endTime() != null) {
+            log.info("Workout finished, workout={}, user={}", id, user.getId());
+        } else {
+            log.debug("Workout updated, workout={}, user={}", id, user.getId());
+        }
         return workoutMapper.mapToResponse(updatedWorkout);
     }
 
@@ -254,6 +264,7 @@ public class WorkoutService {
         }
 
         Workout saved = workoutRepository.save(workout);
+        log.info("Workout edited, workout={}, user={}", id, user.getId());
         return workoutMapper.mapToResponse(saved);
     }
 
@@ -266,6 +277,7 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("Workout not found " + workoutId));
 
         if(!workout.getUser().getId().equals(user.getId())){
+            log.warn("Access denied: user={} tried to save cardio data for workout={}", user.getId(), workoutId);
             throw new UnauthorizedAccessException("You dont have access to this workout");
         }
 
@@ -315,6 +327,8 @@ public class WorkoutService {
         }
 
         workoutRepository.save(workout);
+        log.info("Cardio data saved, workout={}, trackPoints={}, user={}", workoutId,
+                request.trackPoints() != null ? request.trackPoints().size() : 0, user.getId());
 
         return workoutMapper.mapToResponse(workout);
     }

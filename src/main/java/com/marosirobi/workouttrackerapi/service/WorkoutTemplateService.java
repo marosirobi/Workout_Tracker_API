@@ -14,10 +14,12 @@ import com.marosirobi.workouttrackerapi.repository.UserRepository;
 import com.marosirobi.workouttrackerapi.repository.WorkoutTemplateRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkoutTemplateService {
@@ -40,6 +42,7 @@ public class WorkoutTemplateService {
         replaceExercises(workoutTemplate, request.exercises());
 
         WorkoutTemplate savedTemplate = workoutTemplateRepository.save(workoutTemplate);
+        log.info("Template created, template={}, user={}", savedTemplate.getId(), user.getId());
         return workoutTemplateMapper.mapToResponse(savedTemplate);
     }
 
@@ -65,6 +68,7 @@ public class WorkoutTemplateService {
         replaceExercises(workoutTemplate, request.exercises());
 
         workoutTemplateRepository.save(workoutTemplate);
+        log.info("Template updated, template={}, user={}", id, user.getId());
         return workoutTemplateMapper.mapToResponse(workoutTemplate);
     }
 
@@ -77,6 +81,7 @@ public class WorkoutTemplateService {
             throw new ResourceNotFoundException("Workout template doesn't exist or you don't have permission: " + id);
         }
         workoutTemplateRepository.deleteById(id);
+        log.info("Template deleted, template={}, user={}", id, user.getId());
     }
 
     private void replaceExercises(WorkoutTemplate template, List<TemplateExerciseRequest> requests) {

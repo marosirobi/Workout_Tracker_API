@@ -6,6 +6,7 @@ import com.marosirobi.workouttrackerapi.exception.TokenRefreshException;
 import com.marosirobi.workouttrackerapi.repository.RefreshTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -36,13 +38,19 @@ public class RefreshTokenService {
     @Transactional(dontRollbackOn = TokenRefreshException.class)
     public RefreshToken rotate(String oldToken){
         RefreshToken existing = refreshTokenRepository.findByToken(oldToken)
-                .orElseThrow(() -> new TokenRefreshException("Invalid refresh token"));
+                .orElseThrow(() -> {
+                    log.warn("Refresh failed: unknown refresh token");
+                    return new TokenRefreshException("Invalid refresh token");
+                });
 
         refreshTokenRepository.delete(existing);
 
         if(existing.getExpiryDate().isBefore(Instant.now())){
+            log.info("Refresh failed: expired refresh token, user={}", existing.getUser().getId());
             throw new TokenRefreshException("Refresh token expired");
         }
+
+        log.debug("Refresh token rotated, user={}", existing.getUser().getId());
 
         return createRefreshToken(existing.getUser());
     }
@@ -50,7 +58,12 @@ public class RefreshTokenService {
     @Transactional
     public void deleteByToken(String token){
         refreshTokenRepository.findByToken(token)
-                .ifPresent(refreshTokenRepository::delete);
+                .ifPresentOrElse(
+                        refreshToken -> {
+                            refreshTokenRepository.delete(refreshToken);
+                            log.info("User logged out, user={}", refreshToken.getUser().getId());
+                        },
+                        () -> log.debug("Logout with unknown refresh token"));
     }
 
     @Transactional
@@ -61,6 +74,9 @@ public class RefreshTokenService {
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void deleteExpiredTokens(){
-        refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+        long deleted = refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+        if (deleted > 0) {
+            log.info("Deleted {} expired refresh tokens", deleted);
+        }
     }
 }

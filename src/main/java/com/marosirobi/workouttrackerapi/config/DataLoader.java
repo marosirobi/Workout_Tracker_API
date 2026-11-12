@@ -5,6 +5,7 @@ import com.marosirobi.workouttrackerapi.domain.enums.MuscleGroup;
 import com.marosirobi.workouttrackerapi.domain.enums.WorkoutType;
 import com.marosirobi.workouttrackerapi.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Component
 @Profile("dev")
 @RequiredArgsConstructor
@@ -41,7 +43,7 @@ public class DataLoader implements CommandLineRunner {
             testUser.setPassword(passwordEncoder.encode("jelszo"));
 
             userRepository.save(testUser);
-            System.out.println("TestUser data is saved!");
+            log.info("TestUser data is saved!");
 
             //add test exercises
             Exercise benchPress = exerciseRepository.findByExerciseName("Bench press")
@@ -52,7 +54,7 @@ public class DataLoader implements CommandLineRunner {
             squat.setMuscleGroup(MuscleGroup.LEGS);
             exerciseRepository.save(squat);
 
-            System.out.println("Test exercises are saved!");
+            log.info("Test exercises are saved!");
 
             //add test workout
             Workout workout = new Workout();
@@ -67,7 +69,7 @@ public class DataLoader implements CommandLineRunner {
             workout2.setStartTime(Instant.now());
             workoutRepository.save(workout2);
 
-            System.out.println("Test workout is saved!");
+            log.info("Test workout is saved!");
 
             //add test workoutExercise and ExerciseSet data
             WorkoutExercise workoutExercise = new WorkoutExercise();
@@ -97,7 +99,7 @@ public class DataLoader implements CommandLineRunner {
             exerciseSetRepository.save(exerciseSet1);
             exerciseSetRepository.save(exerciseSet2);
 
-            System.out.println("Test workoutExercise and exerciseSets are saved!");
+            log.info("Test workoutExercise and exerciseSets are saved!");
 
             WorkoutTemplate template = new WorkoutTemplate();
             template.setTemplateName("mell-tricepsz nap");
@@ -114,7 +116,7 @@ public class DataLoader implements CommandLineRunner {
             workoutTemplateRepository.save(template);
             templateExerciseRepository.save(ex);
 
-            System.out.println("Test Template and TemplateSet are saved!");
+            log.info("Test Template and TemplateSet are saved!");
         }
 
     }

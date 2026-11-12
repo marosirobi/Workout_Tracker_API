@@ -15,13 +15,16 @@ import com.marosirobi.workouttrackerapi.exception.InvalidCredentialsException;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.mapper.UserMapper;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
+import com.marosirobi.workouttrackerapi.utils.LogUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -34,12 +37,17 @@ public class UserService {
 
     public AuthResponse login(LoginRequest request){
         User user = userRepository.findByEmailIgnoreCase(request.email().trim())
-                .orElseThrow(() -> new InvalidCredentialsException("Wrong email or password!"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed: unknown email {}", LogUtils.maskEmail(request.email()));
+                    return new InvalidCredentialsException("Wrong email or password!");
+                });
 
         if(!passwordEncoder.matches(request.password(), user.getPassword())){
+            log.warn("Login failed: wrong password, user={}", user.getId());
             throw new InvalidCredentialsException("Wrong email or password!");
         }
 
+        log.info("User logged in, user={}", user.getId());
         return buildAuthResponse(user);
     }
 
@@ -64,6 +72,7 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(newUser);
+        log.info("User registered, user={}", savedUser.getId());
 
         return buildAuthResponse(savedUser);
     }
@@ -97,6 +106,7 @@ public class UserService {
         user.setBodyWeightKg(request.bodyWeightKg());
 
         User updatedUser = userRepository.save(user);
+        log.info("Profile updated, user={}, credentialsChanged={}", user.getId(), credentialsChanged);
 
         String newAccessToken = credentialsChanged ? jwtService.generateToken(user.getEmail(), user.getId()) : null;
 
@@ -109,6 +119,7 @@ public class UserService {
                         .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         userRepository.delete(user);
+        log.info("Account deleted, user={}", user.getId());
     }
 
     public UserResponse getUserByEmail(String email){
@@ -141,6 +152,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found " + email));
 
         if(!passwordEncoder.matches(request.currentPassword(), user.getPassword())){
+            log.warn("Password change failed: wrong current password, user={}", user.getId());
             throw new BadRequestException("Current password is incorrect.", "WRONG_CURRENT_PASSWORD");
         }
 
@@ -151,6 +163,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.newPassword()));
 
         refreshTokenService.deleteAllForUser(user);
+        log.info("Password changed, other sessions revoked, user={}", user.getId());
         return buildAuthResponse(user);
     }
 

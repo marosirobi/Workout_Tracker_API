@@ -6,6 +6,7 @@ import com.marosirobi.workouttrackerapi.domain.enums.TrackingType;
 import com.marosirobi.workouttrackerapi.repository.ExerciseRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 import static com.marosirobi.workouttrackerapi.domain.enums.MuscleGroup.*;
 import static com.marosirobi.workouttrackerapi.domain.enums.TrackingType.*;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @Order(1)
@@ -148,7 +150,7 @@ public class ExerciseSeeder implements CommandLineRunner {
 
         if (!toSave.isEmpty()) {
             exerciseRepository.saveAll(toSave);
-            System.out.println("ExerciseSeeder: " + created + " created, " + updated + " updated");
+            log.info("ExerciseSeeder: {} created, {} updated", created, updated);
         }
     }
 }

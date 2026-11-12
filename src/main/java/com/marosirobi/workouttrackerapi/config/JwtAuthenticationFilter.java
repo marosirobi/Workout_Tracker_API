@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -39,6 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     (email, null, new ArrayList<>());
 
             SecurityContextHolder.getContext().setAuthentication(authToken);
+            MDC.put(RequestLoggingFilter.USER_ID, String.valueOf(jwtService.extractUserId(jwt)));
+        } else {
+            log.debug("Invalid or expired access token");
         }
         filterChain.doFilter(request,response);
     }

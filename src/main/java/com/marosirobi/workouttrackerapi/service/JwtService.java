@@ -34,6 +34,15 @@ public class JwtService {
                 .compact();
     }
 
+    public Long extractUserId(String token){
+        return Jwts.parser()
+                .verifyWith(signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("userId", Long.class);
+    }
+
     public String extractEmail(String token){
         return Jwts.parser()
                 .verifyWith(signingKey)
