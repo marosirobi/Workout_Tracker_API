@@ -4,7 +4,6 @@ import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
 import com.marosirobi.workouttrackerapi.dto.auth.LoginRequest;
 import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
-import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
 import com.marosirobi.workouttrackerapi.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse register(@Valid @RequestBody CreateUserRequest request){
+    public AuthResponse register(@Valid @RequestBody CreateUserRequest request){
         return userService.createUser(request);
     }
 

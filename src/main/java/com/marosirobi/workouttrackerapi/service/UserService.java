@@ -40,18 +40,11 @@ public class UserService {
             throw new InvalidCredentialsException("Wrong email or password!");
         }
 
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getId());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
-
-        return AuthResponse.builder()
-                .token(accessToken)
-                .refreshToken(refreshToken.getToken())
-                .user(userMapper.mapToResponse(user))
-                .build();
+        return buildAuthResponse(user);
     }
 
     @Transactional
-    public UserResponse createUser(CreateUserRequest request){
+    public AuthResponse createUser(CreateUserRequest request){
 
         String username = request.username().trim();
         String email = normalizeEmail(request.email());
@@ -72,7 +65,7 @@ public class UserService {
 
         User savedUser = userRepository.save(newUser);
 
-        return userMapper.mapToResponse(savedUser);
+        return buildAuthResponse(savedUser);
     }
 
     @Transactional
@@ -158,8 +151,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.newPassword()));
 
         refreshTokenService.deleteAllForUser(user);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        return buildAuthResponse(user);
+    }
+
+    private AuthResponse buildAuthResponse(User user){
         String accessToken = jwtService.generateToken(user.getEmail(), user.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
         return AuthResponse.builder()
                 .token(accessToken)
