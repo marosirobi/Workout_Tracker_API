@@ -2,18 +2,23 @@ package com.marosirobi.workouttrackerapi.service;
 
 import com.marosirobi.workouttrackerapi.domain.entity.RefreshToken;
 import com.marosirobi.workouttrackerapi.domain.entity.User;
-import com.marosirobi.workouttrackerapi.dto.auth.AuthResponse;
 import com.marosirobi.workouttrackerapi.dto.auth.LoginRequest;
+import com.marosirobi.workouttrackerapi.dto.auth.RefreshTokenRequest;
+import com.marosirobi.workouttrackerapi.dto.user.ChangePasswordRequest;
 import com.marosirobi.workouttrackerapi.dto.user.CreateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UpdateUserRequest;
 import com.marosirobi.workouttrackerapi.dto.user.UserResponse;
+import com.marosirobi.workouttrackerapi.exception.BadRequestException;
 import com.marosirobi.workouttrackerapi.exception.DuplicateResourceException;
 import com.marosirobi.workouttrackerapi.exception.InvalidCredentialsException;
 import com.marosirobi.workouttrackerapi.exception.ResourceNotFoundException;
 import com.marosirobi.workouttrackerapi.mapper.UserMapper;
 import com.marosirobi.workouttrackerapi.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,272 +26,275 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
+
+    private static final String EMAIL = "user@gmail.com";
 
     @Mock private UserRepository userRepository;
-    @Mock private UserMapper userMapper;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtService jwtService;
     @Mock private RefreshTokenService refreshTokenService;
+    @Mock private UserMapper userMapper;
 
     @InjectMocks
     private UserService userService;
 
-    @Test
-    void createUser_Success(){
-        CreateUserRequest request = CreateUserRequest.builder()
-                .email("test@example.com")
-                .username("user")
-                .password("password")
-                .build();
+    private User user;
 
-        User savedUser = User.builder()
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
                 .id(1L)
-                .email("test@example.com")
-                .username("user")
-                .password("password")
+                .username("User")
+                .email(EMAIL)
+                .password("hashed")
+                .bodyWeightKg(80.0)
                 .build();
-
-        UserResponse userResponse = UserResponse.builder()
-                .id(1L)
-                .email("test@example.com")
-                .username("user")
-                .build();
-
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(userMapper.mapToResponse(savedUser)).thenReturn(userResponse);
-
-        UserResponse result = userService.createUser(request);
-
-        assertNotNull(result);
-        assertEquals("test@example.com",result.email());
-        verify(userRepository, times(1)).save(any(User.class));
     }
 
-    @Test
-    void createUser_ThrowsDuplicateResourceException_WhenEmailTaken(){
-        CreateUserRequest request = CreateUserRequest.builder()
-                .email("exists@example.com")
-                .username("user")
-                .password("password")
-                .build();
-
-        User existingUser = User.builder()
-                .id(1L)
-                .email("exists@example.com")
-                .build();
-
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(existingUser));
-
-        assertThrows(DuplicateResourceException.class, () -> userService.createUser(request));
-
-        verify(userRepository, never()).save(any(User.class));
+    private void givenTokensAreIssued() {
+        given(jwtService.generateToken(anyString(), anyLong())).willReturn("access-token");
+        given(refreshTokenService.createRefreshToken(any(User.class)))
+                .willAnswer(inv -> RefreshToken.builder().token("refresh-token").user(inv.getArgument(0)).build());
+        given(userMapper.mapToResponse(any(User.class)))
+                .willAnswer(inv -> {
+                    User u = inv.getArgument(0);
+                    return UserResponse.builder().id(u.getId()).username(u.getUsername()).email(u.getEmail()).build();
+                });
     }
 
-    @Test
-    void login_Success(){
-        LoginRequest request = LoginRequest.builder()
-                .email("test@test.com")
-                .password("password")
-                .build();
+    @Nested
+    class CreateUser {
 
-        User user = User.builder()
-                .id(1L)
-                .email("test@test.com")
-                .password("encodedPassword")
-                .build();
+        @Test
+        void normalizesInput_andReturnsTokens() {
+            given(userRepository.existsByEmailIgnoreCase(EMAIL)).willReturn(false);
+            given(userRepository.existsByUsernameIgnoreCase("User")).willReturn(false);
+            given(passwordEncoder.encode("Password1!")).willReturn("hashed");
+            given(userRepository.save(any(User.class))).willAnswer(inv -> {
+                User saved = inv.getArgument(0);
+                saved.setId(1L);
+                return saved;
+            });
+            givenTokensAreIssued();
 
-        RefreshToken refreshToken = RefreshToken.builder()
-                .token("refresh-token")
-                .build();
+            var response = userService.createUser(new CreateUserRequest(" User ", " User@Gmail.COM ", "Password1!"));
 
-        UserResponse response = UserResponse.builder()
-                .email("test@test.com")
-                .build();
+            var saved = ArgumentCaptor.forClass(User.class);
+            then(userRepository).should().save(saved.capture());
+            assertThat(saved.getValue())
+                    .extracting(User::getUsername, User::getEmail, User::getPassword)
+                    .containsExactly("User", EMAIL, "hashed");
+            assertThat(response.token()).isEqualTo("access-token");
+            assertThat(response.refreshToken()).isEqualTo("refresh-token");
+            assertThat(response.user().email()).isEqualTo(EMAIL);
+        }
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(request.password(),user.getPassword())).thenReturn(true);
-        when(jwtService.generateToken(user.getEmail(),user.getId())).thenReturn("access-token");
-        when(refreshTokenService.createRefreshToken(user.getId())).thenReturn(refreshToken);
-        when(userMapper.mapToResponse(user)).thenReturn(response);
+        @Test
+        void rejectsTakenEmail() {
+            given(userRepository.existsByEmailIgnoreCase(EMAIL)).willReturn(true);
 
-        AuthResponse result = userService.login(request);
+            assertThatThrownBy(() -> userService.createUser(new CreateUserRequest("User", "USER@gmail.com", "Password1!")))
+                    .isInstanceOf(DuplicateResourceException.class)
+                    .hasFieldOrPropertyWithValue("code", "EMAIL_TAKEN");
+            then(userRepository).should(never()).save(any());
+        }
 
-        assertNotNull(result);
-        assertEquals("access-token", result.token());
-        assertEquals("refresh-token", result.refreshToken());
+        @Test
+        void rejectsTakenUsername() {
+            given(userRepository.existsByEmailIgnoreCase(EMAIL)).willReturn(false);
+            given(userRepository.existsByUsernameIgnoreCase("user")).willReturn(true);
+
+            assertThatThrownBy(() -> userService.createUser(new CreateUserRequest("user", EMAIL, "Password1!")))
+                    .isInstanceOf(DuplicateResourceException.class)
+                    .hasFieldOrPropertyWithValue("code", "USERNAME_TAKEN");
+            then(userRepository).should(never()).save(any());
+        }
     }
 
-    @Test
-    void login_ThrowsInvalidCredentialsException_WhenEmailNotFound(){
-        LoginRequest request = LoginRequest.builder()
-                .email("test@test.com")
-                .password("password")
-                .build();
+    @Nested
+    class Login {
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        @Test
+        void acceptsDifferentlyCasedEmail() {
+            given(userRepository.findByEmailIgnoreCase("USER@gmail.com")).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("Password1!", "hashed")).willReturn(true);
+            givenTokensAreIssued();
 
-        assertThrows(InvalidCredentialsException.class, () -> userService.login(request));
+            var response = userService.login(new LoginRequest(" USER@gmail.com ", "Password1!"));
+
+            assertThat(response.token()).isEqualTo("access-token");
+            then(refreshTokenService).should().createRefreshToken(user);
+        }
+
+        @Test
+        void rejectsUnknownEmail() {
+            given(userRepository.findByEmailIgnoreCase("nobody@gmail.com")).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.login(new LoginRequest("nobody@gmail.com", "Password1!")))
+                    .isInstanceOf(InvalidCredentialsException.class);
+            then(passwordEncoder).shouldHaveNoInteractions();
+            then(refreshTokenService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        void rejectsWrongPassword() {
+            given(userRepository.findByEmailIgnoreCase(EMAIL)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("wrong", "hashed")).willReturn(false);
+
+            assertThatThrownBy(() -> userService.login(new LoginRequest(EMAIL, "wrong")))
+                    .isInstanceOf(InvalidCredentialsException.class);
+            then(refreshTokenService).shouldHaveNoInteractions();
+        }
     }
 
-    @Test
-    void login_ThrowsInvalidCredentialsException_WhenPasswordIsWrong(){
-        LoginRequest request = LoginRequest.builder()
-                .email("test@test.com")
-                .password("password")
-                .build();
+    @Nested
+    class UpdateUser {
 
-        User user = User.builder()
-                .id(1L)
-                .email("test@test.com")
-                .password("encodedPassword")
-                .build();
+        @Test
+        void newEmail_issuesNewAccessToken() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(userRepository.existsByEmailIgnoreCase("new@mail.com")).willReturn(false);
+            given(userRepository.save(user)).willReturn(user);
+            given(jwtService.generateToken("new@mail.com", 1L)).willReturn("new-access");
+            given(userMapper.mapToResponse(user, "new-access"))
+                    .willReturn(UserResponse.builder().accessToken("new-access").build());
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(request.password(), user.getPassword())).thenReturn(false);
+            var response = userService.updateUser(EMAIL, new UpdateUserRequest("User", " New@Mail.com ", 82.0));
 
-        assertThrows(InvalidCredentialsException.class, () -> userService.login(request));
+            assertThat(user.getEmail()).isEqualTo("new@mail.com");
+            assertThat(user.getBodyWeightKg()).isEqualTo(82.0);
+            assertThat(response.accessToken()).isEqualTo("new-access");
+        }
+
+        @Test
+        void onlyBodyWeight_keepsAccessToken() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(userRepository.save(user)).willReturn(user);
+            given(userMapper.mapToResponse(user, null)).willReturn(UserResponse.builder().build());
+
+            userService.updateUser(EMAIL, new UpdateUserRequest("User", EMAIL, 85.0));
+
+            assertThat(user.getBodyWeightKg()).isEqualTo(85.0);
+            then(jwtService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        void rejectsTakenEmail() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(userRepository.existsByEmailIgnoreCase("taken@mail.com")).willReturn(true);
+
+            assertThatThrownBy(() -> userService.updateUser(EMAIL, new UpdateUserRequest("User", "taken@mail.com", 80.0)))
+                    .isInstanceOf(DuplicateResourceException.class)
+                    .hasFieldOrPropertyWithValue("code", "EMAIL_TAKEN");
+            then(userRepository).should(never()).save(any());
+        }
+
+        @Test
+        void usernameCaseChange_skipsDuplicateCheck() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(userRepository.save(user)).willReturn(user);
+            given(jwtService.generateToken(EMAIL, 1L)).willReturn("new-access");
+            given(userMapper.mapToResponse(user, "new-access")).willReturn(UserResponse.builder().build());
+
+            userService.updateUser(EMAIL, new UpdateUserRequest("user", EMAIL, 80.0));
+
+            assertThat(user.getUsername()).isEqualTo("user");
+            then(userRepository).should(never()).existsByUsernameIgnoreCase(any());
+        }
     }
 
-    @Test
-    void updateUser_Success(){
-        String oldEmail = "old@test.com";
-        String oldUser = "oldUser";
-        UpdateUserRequest request = UpdateUserRequest.builder()
-                .email("new@test.com")
-                .username("newUser")
-                .build();
+    @Nested
+    class ChangePassword {
 
-        User user = User.builder()
-                .id(1L)
-                .email(oldEmail)
-                .username(oldUser)
-                .build();
+        @Test
+        void revokesOtherSessions_beforeIssuingNewTokens() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("Old12345!", "hashed")).willReturn(true);
+            given(passwordEncoder.matches("New12345!", "hashed")).willReturn(false);
+            given(passwordEncoder.encode("New12345!")).willReturn("new-hashed");
+            givenTokensAreIssued();
 
-        UserResponse response = UserResponse.builder()
-                .email("new@test.com")
-                .username("newUser")
-                .build();
+            var response = userService.changePassword(EMAIL, new ChangePasswordRequest("Old12345!", "New12345!"));
 
-        when(userRepository.findByEmail(oldEmail)).thenReturn(Optional.of(user));
-        when(userRepository.findByEmail(request.email()).isPresent()).thenReturn(false);
-        when(userRepository.findByUsername(request.username()).isPresent()).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtService.generateToken("new@test.com", user.getId())).thenReturn("new-access-token");
-        when(userMapper.mapToResponse(user,"new-access-token")).thenReturn(response);
+            assertThat(user.getPassword()).isEqualTo("new-hashed");
+            assertThat(response.refreshToken()).isEqualTo("refresh-token");
+            var inOrder = inOrder(refreshTokenService);
+            then(refreshTokenService).should(inOrder).deleteAllForUser(user);
+            then(refreshTokenService).should(inOrder).createRefreshToken(user);
+        }
 
-        UserResponse result = userService.updateUser(oldEmail, request);
+        @Test
+        void rejectsWrongCurrentPassword() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("wrong", "hashed")).willReturn(false);
 
-        assertNotNull(result);
-        assertEquals("new@test.com",result.email());
-        verify(jwtService, times(1)).generateToken(anyString(), anyLong());
+            assertThatThrownBy(() -> userService.changePassword(EMAIL, new ChangePasswordRequest("wrong", "New12345!")))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasFieldOrPropertyWithValue("code", "WRONG_CURRENT_PASSWORD");
+            assertThat(user.getPassword()).isEqualTo("hashed");
+            then(refreshTokenService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        void rejectsSamePassword() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("Old12345!", "hashed")).willReturn(true);
+
+            assertThatThrownBy(() -> userService.changePassword(EMAIL, new ChangePasswordRequest("Old12345!", "Old12345!")))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasFieldOrPropertyWithValue("code", "SAME_PASSWORD");
+            then(passwordEncoder).should(never()).encode(any());
+        }
     }
 
-    @Test
-    void updateUser_ThrowsDuplicateResourceException_WhenNewEmailIsTaken(){
-        String oldEmail = "old@test.com";
-        UpdateUserRequest request = UpdateUserRequest.builder()
-                .email("taken@test.com")
-                .build();
+    @Nested
+    class Session {
 
-        User existingUser = User.builder()
-                .id(1L)
-                .email(oldEmail)
-                .build();
+        @Test
+        void refresh_returnsRotatedToken() {
+            given(refreshTokenService.rotate("old-token"))
+                    .willReturn(RefreshToken.builder().token("new-token").user(user).build());
+            given(jwtService.generateToken(EMAIL, 1L)).willReturn("access-token");
+            given(userMapper.mapToResponse(user)).willReturn(UserResponse.builder().id(1L).build());
 
-        User otherUser = User.builder()
-                .id(2L)
-                .email("taken@test.com")
-                .build();
+            var response = userService.refreshToken(new RefreshTokenRequest("old-token"));
 
-        when(userRepository.findByEmail(oldEmail)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(otherUser));
+            assertThat(response.refreshToken()).isEqualTo("new-token");
+            assertThat(response.token()).isEqualTo("access-token");
+        }
 
-        assertThrows(DuplicateResourceException.class,() -> userService.updateUser(oldEmail, request));
+        @Test
+        void logout_deletesGivenToken() {
+            userService.logout(new RefreshTokenRequest("some-token"));
+
+            then(refreshTokenService).should().deleteByToken("some-token");
+        }
     }
 
-    @Test
-    void updateUser_ThrowsDuplicateResourceException_WhenNewUsernameIsTaken(){
-        String oldEmail = "old@test.com";
-        UpdateUserRequest request = UpdateUserRequest.builder()
-                .email("new@test.com")
-                .username("updateUser")
-                .build();
+    @Nested
+    class Account {
 
-        User existingUser = User.builder()
-                .id(1L)
-                .username("oldUser")
-                .email(oldEmail)
-                .build();
+        @Test
+        void delete_removesUser() {
+            given(userRepository.findByEmail(EMAIL)).willReturn(Optional.of(user));
 
-        User otherUser = User.builder()
-                .id(2L)
-                .username("updateUser")
-                .email("taken@test.com")
-                .build();
+            userService.deleteUser(EMAIL);
 
-        when(userRepository.findByEmail(oldEmail)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(request.email()).isPresent()).thenReturn(false);
-        when(userRepository.findByUsername(request.username())).thenReturn(Optional.of(otherUser));
+            then(userRepository).should().delete(user);
+        }
 
-        assertThrows(DuplicateResourceException.class,() -> userService.updateUser(oldEmail, request));
+        @Test
+        void get_unknownUser_throws() {
+            given(userRepository.findByEmail("nobody@gmail.com")).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.getUserByEmail("nobody@gmail.com"))
+                    .isInstanceOf(ResourceNotFoundException.class);
+        }
     }
-
-    @Test
-    void deleteUser_Success(){
-        String email = "test@test.com";
-        User user = User.builder()
-                .id(1L)
-                .email(email)
-                .build();
-
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        userService.deleteUser(email);
-        verify(userRepository, times(1)).delete(user);
-    }
-
-    @Test
-    void getUserByEmail_Success(){
-        String email = "test@test.com";
-
-        User user = User.builder()
-                .id(1L)
-                .email(email)
-                .build();
-
-        UserResponse userResponse = UserResponse.builder()
-                .email(email)
-                .build();
-
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(userMapper.mapToResponse(user)).thenReturn(userResponse);
-
-        UserResponse result = userService.getUserByEmail(email);
-
-        assertNotNull(result);
-        assertEquals(email,result.email());
-
-        verify(userRepository, times(1)).findByEmail(email);
-    }
-
-    @Test
-    void getUserByEmail_ThrowsResourceNotFoundException_WhenUserDoesNotExist(){
-        String email = "test@example.com";
-
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> userService.getUserByEmail(email)
-        );
-
-        verify(userMapper, never()).mapToResponse(any());
-    }
-
 }

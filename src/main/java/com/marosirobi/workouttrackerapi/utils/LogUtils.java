@@ -4,7 +4,7 @@ public final class LogUtils {
 
     private LogUtils() { }
 
-    // pl. "robi@gmail.com" -> "ro***@gmail.com"
+    // "user@gmail.com" -> "us***@gmail.com"
     public static String maskEmail(String email) {
         if (email == null) return "-";
 

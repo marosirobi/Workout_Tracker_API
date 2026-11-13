@@ -33,7 +33,7 @@ public class ExerciseSeeder implements CommandLineRunner {
     }
 
     private static final List<Seed> SEEDS = List.of(
-            // Mell
+            // Chest
             weights("Bench press", CHEST),
             weights("Incline bench press", CHEST),
             weights("Decline bench press", CHEST),
@@ -48,7 +48,7 @@ public class ExerciseSeeder implements CommandLineRunner {
             new Seed("Push-up", CHEST, BODYWEIGHT),
             new Seed("Push-up (weighted)", CHEST, WEIGHTED_BODYWEIGHT),
 
-            // Hat
+            // Back
             weights("Deadlift", BACK),
             new Seed("Pull-up", BACK, BODYWEIGHT),
             new Seed("Pull-up (weighted)", BACK, WEIGHTED_BODYWEIGHT),
@@ -62,7 +62,7 @@ public class ExerciseSeeder implements CommandLineRunner {
             weights("Back extension", BACK),
             new Seed("Dead hang", BACK, DURATION),
 
-            // Lab
+            // Legs
             weights("Squat", LEGS),
             weights("Front squat", LEGS),
             weights("Leg press", LEGS),
@@ -75,7 +75,7 @@ public class ExerciseSeeder implements CommandLineRunner {
             weights("Calf raise", LEGS),
             new Seed("Wall sit", LEGS, DURATION),
 
-            // Vall
+            // Shoulders
             weights("Overhead press", SHOULDERS),
             weights("Dumbbell shoulder press", SHOULDERS),
             weights("Arnold press", SHOULDERS),
@@ -86,7 +86,7 @@ public class ExerciseSeeder implements CommandLineRunner {
             weights("Upright row", SHOULDERS),
             weights("Shrug", SHOULDERS),
 
-            // Bicepsz
+            // Biceps
             weights("Barbell curl", BICEPS),
             weights("Dumbbell curl", BICEPS),
             weights("Hammer curl", BICEPS),
@@ -95,7 +95,7 @@ public class ExerciseSeeder implements CommandLineRunner {
             weights("Concentration curl", BICEPS),
             weights("Incline dumbbell curl", BICEPS),
 
-            // Tricepsz
+            // Triceps
             weights("Triceps pushdown", TRICEPS),
             weights("Overhead triceps extension", TRICEPS),
             weights("Skull crusher", TRICEPS),
@@ -104,7 +104,7 @@ public class ExerciseSeeder implements CommandLineRunner {
             new Seed("Triceps dip (weighted)", TRICEPS, WEIGHTED_BODYWEIGHT),
             weights("Dumbbell kickback", TRICEPS),
 
-            // Has
+            // Abs
             new Seed("Crunch", ABS, BODYWEIGHT),
             weights("Cable crunch", ABS),
             new Seed("Hanging leg raise", ABS, BODYWEIGHT),
