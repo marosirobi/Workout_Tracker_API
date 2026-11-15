@@ -76,6 +76,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiError> handleTooManyRequests(TooManyRequestsException ex, WebRequest request) {
+        ApiError apiError = buildApiError(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+        apiError.setCode("TOO_MANY_REQUESTS");
+        return new ResponseEntity<>(apiError, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest request) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());

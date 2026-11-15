@@ -88,6 +88,19 @@ class AuthFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void login_tooManyAttempts_returns429() throws Exception {
+        var user = registerUser();
+
+        for (int i = 0; i < 10; i++) {
+            postJson("/api/auth/login", loginBody(user.email(), "Wrong1234!"));
+        }
+
+        assertThat(postJson("/api/auth/login", loginBody(user.email(), PASSWORD)))
+                .hasStatus(HttpStatus.TOO_MANY_REQUESTS)
+                .bodyJson().extractingPath("$.code").isEqualTo("TOO_MANY_REQUESTS");
+    }
+
+    @Test
     void changePassword_revokesOldSessions() throws Exception {
         var user = registerUser();
 
