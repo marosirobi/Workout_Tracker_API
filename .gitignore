@@ -51,9 +51,11 @@ Thumbs.db
 logs/
 
 ### Secrets & Local Configs ###
-.env
 application-local.properties
 application-local.yml
 
 ### Local database ###
 data/
+
+### Docker ###
+.env

@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Slf4j
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
     public static final String REQUEST_ID = "requestId";
@@ -45,13 +45,14 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         } finally {
             long durationMs = System.currentTimeMillis() - start;
             String userId = MDC.get(USER_ID);
+            String clientIp = request.getRemoteAddr();
 
             if (durationMs >= SLOW_REQUEST_MS) {
-                log.warn("{} {} {} {}ms user={} (slow)", request.getMethod(), request.getRequestURI(),
-                        response.getStatus(), durationMs, userId != null ? userId : "-");
+                log.warn("{} {} {} {}ms user={} ip={} (slow)", request.getMethod(), request.getRequestURI(),
+                        response.getStatus(), durationMs, userId != null ? userId : "-", clientIp);
             } else {
-                log.info("{} {} {} {}ms user={}", request.getMethod(), request.getRequestURI(),
-                        response.getStatus(), durationMs, userId != null ? userId : "-");
+                log.info("{} {} {} {}ms user={} ip={}", request.getMethod(), request.getRequestURI(),
+                        response.getStatus(), durationMs, userId != null ? userId : "-", clientIp);
             }
 
             MDC.clear();

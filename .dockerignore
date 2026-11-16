@@ -1,0 +1,7 @@
+target/
+build/
+data/
+.idea/
+.git/
+.env
+*.iml
